@@ -47,7 +47,7 @@ function Login() {
             <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
 
                 <h2 className="text-3xl font-bold text-center mb-8">
-                    Welcome Back
+                    Login
                 </h2>
 
                 {error && (
