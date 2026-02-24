@@ -11,7 +11,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Payment from "./pages/Payment";
 
-import AdminRoute from "./components/AdminRoute";
+// import AdminRoute from "./components/AdminRoute";
 import ProductList from "./pages/admin/ProductList";
 import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";

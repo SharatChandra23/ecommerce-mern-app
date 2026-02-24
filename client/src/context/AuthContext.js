@@ -7,15 +7,23 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const setAuthToken = (token) => {
+        if (token) {
+            localStorage.setItem("token", token);
+            axiosInstance.defaults.headers.common[
+                "Authorization"
+            ] = `Bearer ${token}`;
+        } else {
+            localStorage.removeItem("token");
+            delete axiosInstance.defaults.headers.common["Authorization"];
+        }
+    };
+
     const refreshAccessToken = async () => {
         try {
             const res = await axiosInstance.post("/auth/refresh");
             const newToken = res.data.accessToken;
-
-            localStorage.setItem("token", newToken);
-            axiosInstance.defaults.headers.common[
-                "Authorization"
-            ] = `Bearer ${newToken}`;
+            setAuthToken(newToken);
 
             return newToken;
         } catch (err) {
@@ -32,7 +40,8 @@ export const AuthProvider = ({ children }) => {
 
                 if (
                     error.response?.status === 401 &&
-                    !originalRequest._retry
+                    !originalRequest._retry &&
+                    !originalRequest.url.includes("/auth/refresh")
                 ) {
                     originalRequest._retry = true;
 
@@ -57,22 +66,27 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        const initializeAuth = async () => {
+            const token = localStorage.getItem("token");
 
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
-        axiosInstance.defaults.headers.common[
-            "Authorization"
-        ] = `Bearer ${token}`;
+            setAuthToken(token);
 
-        axiosInstance
-            .get("/auth/me")
-            .then((res) => setUser(res.data))
-            .catch(() => logout())
-            .finally(() => setLoading(false));
+            try {
+                const res = await axiosInstance.get("/auth/me");
+                setUser(res.data);
+            } catch (err) {
+                logout();
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
     }, []);
 
     const login = async (email, password) => {
@@ -82,18 +96,24 @@ export const AuthProvider = ({ children }) => {
         });
 
         const { accessToken, user } = res.data;
+        setAuthToken(accessToken);
+        setUser(user);
 
-        localStorage.setItem("token", accessToken);
-        axiosInstance.defaults.headers.common[
-            "Authorization"
-        ] = `Bearer ${accessToken}`;
+        return user;
+    };
 
-        setUser(user); // includes isAdmin
+    const signup = async (formData) => {
+        const res = await axiosInstance.post("/auth/signup", formData);
+
+        const { accessToken, user } = res.data;
+        setAuthToken(accessToken);
+        setUser(user);
+
+        return user; // important
     };
 
     const logout = () => {
-        localStorage.removeItem("token");
-        delete axiosInstance.defaults.headers.common["Authorization"];
+        setAuthToken(null);
         setUser(null);
     };
 
@@ -106,7 +126,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
             {children}
         </AuthContext.Provider>
     );

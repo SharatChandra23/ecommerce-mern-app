@@ -1,10 +1,24 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useNavigate, useLocation } from "react-router-dom";
+import { useCart } from "../context/CartContext";
+import axiosInstance from "../utils/axiosInstance";
+import { AuthContext } from "../context/AuthContext";
 function Signup() {
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { signup } = useContext(AuthContext);
+  const { mergeGuestCart } = useCart();
+
+  const redirect =
+    new URLSearchParams(location.search).get("redirect") || "/";
+
   const [form, setForm] = useState({
     name: "",
     email: "",
+    phoneNumber: "",
     password: "",
     confirmPassword: "",
   });
@@ -16,9 +30,19 @@ function Signup() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(form);
+
+    try {
+      await signup(form);   // sets token + user properly
+
+      await mergeGuestCart();  // now token exists in header
+
+      navigate("/checkout");   // recommended flow
+
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -58,6 +82,20 @@ function Signup() {
               onChange={handleChange}
               className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-slate-900 focus:outline-none"
               required
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div>
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <input
+              type="text"
+              name="phone"
+              placeholder="Phone Number (Optional)"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-slate-900 focus:outline-none"
             />
           </div>
 

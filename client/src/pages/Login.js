@@ -1,8 +1,11 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 
 function Login() {
+    const { mergeGuestCart } = useCart();
+
     const { login } = useContext(AuthContext);
 
     const [form, setForm] = useState({
@@ -18,6 +21,8 @@ function Login() {
 
     const from = location.state?.from?.pathname || "/";
 
+    const redirect = new URLSearchParams(location.search).get("redirect") || "/";
+
     const handleChange = (e) => {
         setForm({
             ...form,
@@ -32,7 +37,9 @@ function Login() {
 
         try {
             await login(form.email, form.password);
-            navigate(from, { replace: true });
+            // navigate(from, { replace: true });
+            navigate(`/${redirect}`);
+            await mergeGuestCart();
         } catch (err) {
             setError(
                 err.response?.data?.message || "Login failed. Try again."
@@ -95,8 +102,8 @@ function Login() {
                         type="submit"
                         disabled={loading}
                         className={`w-full py-3 rounded-lg font-semibold transition duration-300 ${loading
-                                ? "bg-gray-400 cursor-not-allowed"
-                                : "bg-slate-900 text-white hover:bg-slate-800"
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-slate-900 text-white hover:bg-slate-800"
                             }`}
                     >
                         {loading ? "Signing In..." : "Sign In"}

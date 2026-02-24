@@ -8,7 +8,9 @@ function Checkout() {
 
     useEffect(() => {
         if (!user) {
-            navigate("/login");
+            // if (!token) {
+            navigate("/login?redirect=checkout");
+            // }
         }
     }, [navigate, user]);
 
