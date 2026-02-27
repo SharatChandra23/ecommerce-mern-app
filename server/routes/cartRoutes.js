@@ -5,15 +5,19 @@ const {
     addToCart,
     removeFromCart,
     updateCartItem,
+    decreaseQuantity,
+    increaseQuantity,
 } = require("../controllers/cartController");
 
 const { protect } = require("../middleware/authMiddleware");
 
 router.use(protect);
 
-router.get("/", getCart);
-router.post("/", addToCart);
+router.get("/", protect, getCart);
+router.post("/", protect, addToCart);
 router.put("/:productId", updateCartItem);
-router.delete("/:productId", removeFromCart);
+router.delete("/:productId", protect, removeFromCart);
+router.put("increase/:productId", increaseQuantity);
+router.put("decrease/:productId", decreaseQuantity);
 
 module.exports = router;

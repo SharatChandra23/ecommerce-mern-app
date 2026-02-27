@@ -6,7 +6,9 @@ exports.createCategory = async (req, res) => {
 };
 
 exports.getCategories = async (req, res) => {
-    const categories = await Category.find();
+    const categories = await Category.find()
+        .select("name")
+        .lean();
     res.json(categories);
 };
 

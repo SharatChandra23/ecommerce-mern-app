@@ -3,6 +3,11 @@ const Product = require("../models/Product");
 exports.createProduct = async (req, res) => {
     const product = await Product.create(req.body);
     res.json(product);
+
+    // const product = new Product(req.body);
+    // await product.save();
+    // res.status(201).json(product);
+
 };
 
 exports.getProducts = async (req, res) => {
@@ -40,10 +45,15 @@ exports.getProducts = async (req, res) => {
         const total = await Product.countDocuments(query);
 
         const products = await Product.find(query)
-            .populate("category")
+            .select("name price category stock image description createdAt") // select only needed fields
+            .populate({
+                path: "category",
+                select: "name" // only needed category fields
+            })
             .sort(sortOption)
             .skip((page - 1) * limit)
-            .limit(limit);
+            .limit(limit)
+            .lean(); // VERY IMPORTANT
 
         res.json({
             products,
@@ -61,15 +71,15 @@ exports.getProductById = async (req, res) => {
 };
 
 exports.updateProduct = async (req, res) => {
-    const product = await Product.findByIdAndUpdate(
+    const modifiedProduct = await Product.findByIdAndUpdate(
         req.params.id,
         req.body,
         { new: true }
     );
-    res.json(product);
+    res.json(modifiedProduct);
 };
 
 exports.deleteProduct = async (req, res) => {
     await Product.findByIdAndDelete(req.params.id);
-    res.json({ message: "Product deleted" });
+    res.json({ message: "Product removed" });
 };

@@ -6,12 +6,10 @@ const {
     deleteUser,
 } = require("../controllers/userController");
 
-const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { adminOnly } = require("../middleware/authMiddleware");
 
-router.use(protect, adminOnly);
-
-router.get("/", getUsers);
-router.get("/:id", getUserById);
-router.delete("/:id", deleteUser);
+router.get("/", adminOnly, getUsers);
+router.get("/:id", adminOnly, getUserById);
+router.delete("/:id", adminOnly, deleteUser);
 
 module.exports = router;

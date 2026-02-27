@@ -56,37 +56,45 @@ const createProducts = async () => {
     await Product.insertMany([
         {
             name: "Premium Wireless Headphones",
-            description: "Noise cancelling headphones",
+            description:
+                "High-quality noise cancelling wireless headphones with deep bass and 30-hour battery life.",
             price: 299,
             stock: 50,
             category: audio._id,
+            isActive: true,
             image:
                 "https://images.unsplash.com/photo-1518444065439-e933c06ce9cd",
         },
         {
             name: "Smart Watch Pro",
-            description: "Advanced fitness smartwatch",
+            description:
+                "Advanced fitness smartwatch with heart-rate monitoring, GPS tracking and AMOLED display.",
             price: 449,
             stock: 40,
             category: wearables._id,
+            isActive: true,
             image:
                 "https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b",
         },
         {
             name: 'Ultra Laptop 15"',
-            description: "High performance laptop",
+            description:
+                "High-performance 15-inch laptop with powerful processor, 16GB RAM and SSD storage.",
             price: 1299,
             stock: 25,
             category: computers._id,
+            isActive: true,
             image:
                 "https://images.unsplash.com/photo-1517336714731-489689fd1ca8",
         },
         {
             name: "Professional Camera Kit",
-            description: "DSLR camera with accessories",
+            description:
+                "Professional DSLR camera kit including lens, tripod and carry case.",
             price: 1899,
             stock: 15,
             category: photography._id,
+            isActive: true,
             image:
                 "https://images.unsplash.com/photo-1519183071298-a2962e402c41",
         },

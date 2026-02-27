@@ -1,3 +1,4 @@
+const Product = require("../models/Product");
 const Cart = require("../models/Cart");
 
 exports.getCart = async (req, res) => {
@@ -6,21 +7,73 @@ exports.getCart = async (req, res) => {
 };
 
 exports.addToCart = async (req, res) => {
-    const { product, quantity } = req.body;
+    try {
+        let { productId, quantity } = req.body;
 
-    let cart = await Cart.findOne({ user: req.user.id });
+        if (!productId || !quantity) {
+            return res.status(400).json({
+                success: false,
+                message: "Product and quantity required"
+            });
+        }
 
-    if (!cart) {
-        cart = await Cart.create({
-            user: req.user.id,
-            items: [{ product, quantity }],
-        });
-    } else {
-        cart.items.push({ product, quantity });
+        // IMPORTANT FIX
+        quantity = Number(quantity);
+
+        if (quantity < 1) {
+            return res.status(400).json({
+                success: false,
+                message: "Quantity must be at least 1"
+            });
+        }
+
+        const product = await Product.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found"
+            });
+        }
+
+        let cart = await Cart.findOne({ user: req.user._id });
+
+        if (!cart) {
+            cart = await Cart.create({
+                user: req.user._id,
+                items: [
+                    {
+                        product: productId,
+                        quantity
+                    }
+                ]
+            });
+
+            return res.status(201).json(cart);
+        }
+
+        const existingItem = cart.items.find(
+            item => item.product.toString() === productId
+        );
+
+        if (existingItem) {
+            existingItem.quantity += quantity;
+        } else {
+            cart.items.push({
+                product: productId,
+                quantity
+            });
+        }
+
         await cart.save();
+        res.json(cart);
+    } catch (error) {
+        console.log("Cart error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
-
-    res.json(cart);
 };
 
 exports.updateCartItem = async (req, res) => {
@@ -57,4 +110,85 @@ exports.removeFromCart = async (req, res) => {
 
     await cart.save();
     res.json(cart);
+};
+
+exports.increaseQuantity = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        const cart = await Cart.findOne({ user: req.user.id });
+
+        if (!cart) {
+            return res.status(404).json({ message: "Cart not found" });
+        }
+
+        const item = cart.items.find(
+            i => i.product.toString() === productId
+        );
+
+        if (!item) {
+            return res.status(404).json({ message: "Item not found in cart" });
+        }
+
+        const product = await Product.findById(productId);
+
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
+
+        // STOCK VALIDATION
+        if (item.quantity >= product.stock) {
+            return res.status(400).json({
+                message: "Cannot add more. Stock limit reached."
+            });
+        }
+
+        item.quantity += 1;
+
+        await cart.save();
+
+        res.json(cart);
+
+    } catch (error) {
+        console.log("Increase error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.decreaseQuantity = async (req, res) => {
+    try {
+        const { productId } = req.params;
+
+        const cart = await Cart.findOne({ user: req.user.id });
+
+        if (!cart) {
+            return res.status(404).json({ message: "Cart not found" });
+        }
+
+        const item = cart.items.find(
+            i => i.product.toString() === productId
+        );
+
+        if (!item) {
+            return res.status(404).json({ message: "Item not found in cart" });
+        }
+
+        // Prevent negative
+        if (item.quantity <= 1) {
+            // Remove item if quantity becomes 0
+            cart.items = cart.items.filter(
+                i => i.product.toString() !== productId
+            );
+        } else {
+            item.quantity -= 1;
+        }
+
+        await cart.save();
+
+        res.json(cart);
+
+    } catch (error) {
+        console.log("Decrease error:", error);
+        res.status(500).json({ message: error.message });
+    }
 };
