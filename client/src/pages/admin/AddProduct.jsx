@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api/api";
+import AppButton from "../../components/common/AppButton";
 
 export default function AddProduct() {
     const navigate = useNavigate();
@@ -51,9 +52,9 @@ export default function AddProduct() {
                     className="w-full p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
 
-                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl transition">
+                <AppButton variant="primary" fullWidth>
                     Add Product
-                </button>
+                </AppButton>
             </form>
         </div>
     );

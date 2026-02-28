@@ -1,23 +1,37 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api/api";
+import { FaMapMarkerAlt } from "react-icons/fa";
+import { toast } from "react-hot-toast";
+import Addresses from "./Addresses";
+import AppButton from "../components/common/AppButton";
 
 function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [addresses, setAddresses] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const loadAddresses = async () => {
-      const res = await API.get("/user/addresses");
-      setAddresses(res.data);
+  // Get coupon + delivery instructions from Cart
+  const { deliveryInstructions, appliedCoupon } = location.state || {};
 
-      const defaultAddr = res.data.find(a => a.isDefault);
+  const [cartItems, setCartItems] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const addrRes = await API.get("/user/addresses");
+      setAddresses(addrRes.data);
+
+      const defaultAddr = addrRes.data.find(a => a.isDefault);
       if (defaultAddr) setSelected(defaultAddr._id);
+
+      const cartRes = await API.get("/cart");
+      setCartItems(cartRes.data.items || []);
     };
 
-    loadAddresses();
+    loadData();
   }, []);
 
   const handleCheckout = async () => {
@@ -28,55 +42,132 @@ function Checkout() {
     const selectedAddress = addresses.find(a => a._id === selected);
 
     const res = await API.post("/orders", {
-      shippingAddress: selectedAddress
+      shippingAddress: selectedAddress,
+      deliveryInstructions,
+      couponCode: appliedCoupon
     });
 
     if (!res.data?.order?._id) {
       toast.error("Failed to create order");
       return;
     }
-    const orderId = res.data?.order?._id;
+
+    const orderId = res.data.order._id;
     navigate(`/payment/${orderId}`);
   };
 
+  // ---------------- Calculations ----------------
+  const subtotal = cartItems.reduce(
+    (acc, item) =>
+      acc +
+      (item.product.discountPrice || item.product.price) *
+      item.quantity,
+    0
+  );
+
+  const tax = subtotal * 0.05;
+  const deliveryCharge = subtotal > 1000 ? 0 : 50;
+
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-6">Select Shipping Address</h2>
+    <div className="max-w-7xl mx-auto p-6">
+      <h2 className="text-3xl font-bold mb-10">
+        Checkout summary
+      </h2>
 
-      {addresses.map(addr => (
-        <div
-          key={addr._id}
-          className={`border p-4 rounded mb-4 ${selected === addr._id ? "border-blue-500" : ""
-            }`}
-        >
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="address"
-              checked={selected === addr._id}
-              onChange={() => setSelected(addr._id)}
-            />
-            <div>
-              <p className="font-semibold">{addr.fullName}</p>
-              <p>{addr.addressLine}</p>
-              <p>{addr.city} - {addr.postalCode}</p>
-              {addr.isDefault && (
-                <span className="text-xs bg-green-600 text-white px-2 py-1 rounded">
-                  Default
-                </span>
-              )}
-            </div>
-          </label>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+        {/* ---------------- LEFT SIDE - ADDRESS ---------------- */}
+        <div className="lg:col-span-2 space-y-6">
+
+          <Addresses
+            type="checkout"
+            selectedAddressId={selected}
+            onSelectAddress={setSelected}
+          />
+
         </div>
-      ))}
 
-      <button
-        onClick={handleCheckout}
-        disabled={loading}
-        className="mt-4 bg-blue-600 text-white px-6 py-2 rounded"
-      >
-        {loading ? "Processing..." : "Proceed to Payment"}
-      </button>
+        {/* ---------------- RIGHT SIDE - ORDER SUMMARY ---------------- */}
+        <div className="bg-white p-6 rounded-xl shadow-md border sticky top-24 h-fit">
+
+          <h3 className="text-xl font-semibold mb-6">
+            Order Summary
+          </h3>
+
+          {/* Cart Items */}
+          <div className="space-y-4 mb-6">
+            {cartItems.map(item => (
+              <div key={item.product._id}
+                className="flex justify-between text-sm">
+                <span>
+                  {item.product.name} × {item.quantity}
+                </span>
+                <span>
+                  ₹
+                  {(
+                    (item.product.discountPrice ||
+                      item.product.price) *
+                    item.quantity
+                  ).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <hr className="mb-4" />
+
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span>₹{subtotal.toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span>Tax (5%)</span>
+              <span>₹{tax.toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-between">
+              <span>Delivery</span>
+              <span>₹{deliveryCharge}</span>
+            </div>
+
+            {appliedCoupon && (
+              <div className="flex justify-between text-green-600">
+                <span>Coupon ({appliedCoupon})</span>
+                <span>Applied</span>
+              </div>
+            )}
+
+            {deliveryInstructions && (
+              <div className="mt-3 text-gray-500 text-xs">
+                <strong>Delivery Instructions:</strong>
+                <p>{deliveryInstructions}</p>
+              </div>
+            )}
+
+            <hr />
+
+            <div className="flex justify-between font-bold text-lg">
+              <span>Total Payable</span>
+              <span>
+                ₹{(subtotal + tax + deliveryCharge).toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <AppButton
+            onClick={handleCheckout}
+            disabled={loading}
+            variant="primary"
+            fullWidth
+            className="mt-3"
+          >
+            {loading ? "Processing..." : "Proceed to Payment"}
+          </AppButton>
+
+        </div>
+      </div>
     </div>
   );
 }

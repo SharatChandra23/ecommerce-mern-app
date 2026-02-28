@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import API from "../api/api";
-
 import {
     getGuestCart,
     saveGuestCart,
@@ -13,121 +12,191 @@ export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
     const token = localStorage.getItem("accessToken");
 
-    // Load Cart
+    const loadCart = async () => {
+        if (!token) {
+            setCartItems(getGuestCart());
+        } else {
+            const { data } = await API.get("/cart");
+            setCartItems(data.items || []);
+        }
+    };
+
     useEffect(() => {
-        const loadCart = async () => {
+        const merge = async () => {
             if (token) {
-                const { data } = await API.get("/cart");
-                setCartItems(data.items || []);
-            } else {
+                const guestCart = getGuestCart();
+
+                if (guestCart.length > 0) {
+                    await API.post("/cart/merge", {
+                        guestItems: guestCart,
+                    });
+
+                    clearGuestCart();
+                    loadCart();
+                }
+            }
+        };
+
+        merge();
+    }, [token]);
+
+    useEffect(() => {
+        const syncCart = () => {
+            if (!token) {
                 setCartItems(getGuestCart());
             }
         };
 
-        loadCart();
-    }, [token]);
+        window.addEventListener("storage", syncCart);
 
-    // Add To Cart
-    const addToCart = async (product) => {
-        const existing = cartItems.find(
-            (item) => item._id === product._id
-        );
+        return () =>
+            window.removeEventListener("storage", syncCart);
+    }, []);
 
-        if (existing) {
-            updateQuantity(product._id, existing.quantity + 1);
-            return;
-        }
-
-        const newItem = {
-            ...product,
-            quantity: 1,
-        };
-
-        setCartItems([...cartItems, newItem]);
-
+    // ---------------- ADD TO CART ----------------
+    const addToCart = async (product, qty = 1) => {
         if (!token) {
-            saveGuestCart([...cartItems, newItem]);
+            const existing = getGuestCart();
+            const found = existing.find(
+                (i) => i.product._id === product._id
+            );
+
+            let updated;
+
+            if (found) {
+                updated = existing.map((i) =>
+                    i.product._id === product._id
+                        ? { ...i, quantity: i.quantity + qty }
+                        : i
+                );
+            } else {
+                updated = [...existing, { product, quantity: qty }];
+            }
+
+            saveGuestCart(updated);
+            setCartItems(updated);
         } else {
-            await API.post("/cart", {
-                product: product._id,
-                quantity: 1,
-            });
+            // Optimistic update
+            const optimistic = [...cartItems];
+            const found = optimistic.find(
+                (i) => i.product._id === product._id
+            );
+
+            if (found) {
+                found.quantity += qty;
+            } else {
+                optimistic.push({ product, quantity: qty });
+            }
+
+            setCartItems(optimistic);
+
+            try {
+                await API.post("/cart", {
+                    productId: product._id,
+                    quantity: qty,
+                });
+            } catch (error) {
+                // rollback
+                loadCart();
+            }
         }
     };
 
-    // Update Quantity
-    const updateQuantity = async (id, quantity) => {
-        const item = cartItems.find((i) => i._id === id);
+    // ---------------- INCREASE ----------------
+    const increaseQty = async (productId) => {
+        const item = cartItems.find(
+            (i) => i.product._id === productId
+        );
 
         if (!item) return;
 
-        if (quantity > item.stock) {
-            alert("Not enough stock available");
+        // prevent exceeding stock (frontend safety)
+        if (item.product.stock <= item.quantity) {
+            alert("Stock limit reached");
             return;
         }
 
-        if (quantity < 1) return;
-
-        // Optimistic update
-        const updated = cartItems.map((i) =>
-            i._id === id ? { ...i, quantity } : i
-        );
-
-        setCartItems(updated);
-
-        if (token) {
-            try {
-                await API.put(`/cart/${id}`, { quantity });
-            } catch (error) {
-                alert("Stock limit reached");
-            }
-        } else {
-            saveGuestCart(updated);
-        }
-    };
-
-    // Remove Item
-    const removeItem = async (id) => {
         if (!token) {
-            const cart = getGuestCart().filter(
-                (item) => item._id !== id
+            const updated = cartItems.map((i) =>
+                i.product._id === productId
+                    ? { ...i, quantity: i.quantity + 1 }
+                    : i
             );
-            saveGuestCart(cart);
-            setCartItems(cart);
+
+            saveGuestCart(updated);
+            setCartItems(updated);
         } else {
-            await API.delete(`/cart/${id}`);
-            const { data } = await API.get("/cart");
-            setCartItems(data.items);
-        }
-    };
+            const optimistic = cartItems.map((i) =>
+                i.product._id === productId
+                    ? { ...i, quantity: i.quantity + 1 }
+                    : i
+            );
 
-    // Merge Guest Cart After Login
-    const mergeGuestCart = async () => {
-        const guestCart =
-            JSON.parse(localStorage.getItem("cart")) || [];
+            setCartItems(optimistic);
 
-        if (guestCart.length > 0) {
-            for (let item of guestCart) {
-                await API.post("/cart", {
-                    productId: item._id,
-                    quantity: item.quantity,
-                });
+            try {
+                await API.put(`/cart/increase/${productId}`);
+            } catch {
+                loadCart();
             }
-
-            localStorage.removeItem("cart");
         }
-
-        const { data } = await API.get("/cart");
-        setCartItems(data.items);
     };
 
+    // ---------------- DECREASE ----------------
+    const decreaseQty = async (productId) => {
+        if (!token) {
+            const updated = cartItems
+                .map((item) =>
+                    item.product._id === productId
+                        ? { ...item, quantity: item.quantity - 1 }
+                        : item
+                )
+                .filter((item) => item.quantity > 0);
+
+            saveGuestCart(updated);
+            setCartItems(updated);
+        } else {
+            await API.put(`/cart/decrease/${productId}`);
+            await loadCart();
+        }
+    };
+
+    // ---------------- REMOVE ----------------
+    const removeItem = async (productId) => {
+        if (!token) {
+            const updated = cartItems.filter(
+                (item) => item.product._id !== productId
+            );
+            saveGuestCart(updated);
+            setCartItems(updated);
+        } else {
+            await API.delete(`/cart/${productId}`);
+            await loadCart();
+        }
+    };
+
+    // ---------------- CLEAR ----------------
+    const clearCart = async () => {
+        if (!token) {
+            clearGuestCart();
+            setCartItems([]);
+        } else {
+            await API.delete("/cart/clear");
+            setCartItems([]);
+        }
+    };
+
+    // ---------------- COUNT ----------------
     const cartCount = cartItems.reduce(
         (acc, item) => acc + item.quantity,
         0
     );
 
     const cartTotal = cartItems.reduce(
-        (acc, item) => acc + item.price * item.quantity,
+        (acc, item) =>
+            acc +
+            (item.product.discountPrice || item.product.price) *
+            item.quantity,
         0
     );
 
@@ -136,11 +205,12 @@ export const CartProvider = ({ children }) => {
             value={{
                 cartItems,
                 addToCart,
-                updateQuantity,
+                increaseQty,
+                decreaseQty,
                 removeItem,
+                clearCart,
                 cartCount,
                 cartTotal,
-                mergeGuestCart,
             }}
         >
             {children}

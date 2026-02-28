@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
+import AppHeading from "../components/common/AppHeading";
+import AppButton from "../components/common/AppButton";
 function Signup() {
 
   const navigate = useNavigate();
@@ -45,12 +47,17 @@ function Signup() {
   };
 
   return (
-    <div className="flex justify-center py-20 bg-gray-100 min-h-screen">
+    <div className="flex justify-center py-20 bg-gray-100">
       <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
 
-        <h2 className="text-3xl font-bold text-center mb-8">
+        <AppHeading
+          level={3}
+          align="center"
+          variant="primary"
+          className="mb-8"
+        >
           Create Account
-        </h2>
+        </AppHeading>
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
@@ -129,12 +136,13 @@ function Signup() {
           </div>
 
           {/* Submit Button */}
-          <button
+          <AppButton
             type="submit"
-            className="w-full bg-slate-900 text-white py-3 rounded-lg font-semibold hover:bg-slate-800 transition duration-300"
+            variant="primary"
+            fullWidth
           >
             Sign Up
-          </button>
+          </AppButton>
 
         </form>
 

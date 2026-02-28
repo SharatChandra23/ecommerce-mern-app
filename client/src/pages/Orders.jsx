@@ -1,26 +1,29 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
-import { OrderTimeline } from "./OrderTimeline";
+import { OrderTimeline } from "./orders/OrderStatusTimeline";
 import toast from "react-hot-toast";
 import CustomStatusSelect from "../components/common/CustomStatusSelect";
+import { FaEye, FaTimes } from "react-icons/fa";
 
 function Orders() {
     const [orders, setOrders] = useState([]);
-    const [loadingId, setLoadingId] = useState(false);
+    const [loadingId, setLoadingId] = useState(null);
     const [role, setRole] = useState("");
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [showModal, setShowModal] = useState(false);
 
+    // ---------------- GET ROLE ----------------
     useEffect(() => {
-        // Get role from localStorage (or your auth context)
         const userInfo = JSON.parse(localStorage.getItem("user")) || {};
-        if (userInfo) {
+        if (userInfo?.role) {
             setRole(userInfo.role);
         }
     }, []);
 
+    // ---------------- LOAD ORDERS ----------------
     const loadOrders = async () => {
         try {
             let res;
-
             if (role === "admin") {
                 res = await API.get("/orders/admin/all-orders");
             } else {
@@ -29,111 +32,215 @@ function Orders() {
 
             setOrders(res.data);
         } catch (error) {
-            console.error(error);
+            toast.error("Failed to load orders");
         }
     };
 
     useEffect(() => {
-        if (role) {
-            loadOrders();
-        }
+        if (role) loadOrders();
     }, [role]);
 
+    // ---------------- UPDATE STATUS (ADMIN) ----------------
     const updateStatus = async (id, status) => {
         try {
             setLoadingId(id);
             await API.put(`/orders/admin/${id}/status`, { status });
-            toast.success("Order status updated successfully");
-            loadOrders(); // Refresh
+            toast.success("Order status updated");
+            loadOrders();
         } catch (error) {
-            console.error(error);
-            const message =
-                error.response?.data?.message ||
-                "Something went wrong";
-            toast.error(message);
+            toast.error(
+                error.response?.data?.message || "Update failed"
+            );
         } finally {
             setLoadingId(null);
         }
     };
 
-    const getStatusStyles = (status) => {
-        switch (status) {
-            case "Pending":
-                return "bg-yellow-100 text-yellow-800 border-yellow-300";
-            case "Shipped":
-                return "bg-blue-100 text-blue-800 border-blue-300";
-            case "Delivered":
-                return "bg-green-100 text-green-800 border-green-300";
-            case "Cancelled":
-                return "bg-red-100 text-red-800 border-red-300";
-            default:
-                return "bg-gray-100 text-gray-800 border-gray-300";
-        }
-    };
-
     return (
-        <div className="max-w-6xl mx-auto p-6">
-            <h2 className="text-2xl font-bold mb-6">
+        <div className="max-w-7xl mx-auto p-6">
+
+            <h2 className="text-3xl font-bold mb-10">
                 {role === "admin" ? "Manage Orders" : "My Orders"}
             </h2>
 
             {orders.length === 0 ? (
-                <p>No orders found.</p>
+                <div className="text-center text-gray-500 py-20">
+                    No orders found.
+                </div>
             ) : (
-                orders.map((order) => (
-                    <div
-                        key={order._id}
-                        className="border p-4 rounded mb-6 shadow"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-semibold">
-                                    Order ID: {order._id}
-                                </p>
+                <div className="space-y-6">
+                    {orders.map((order) => (
+                        <div
+                            key={order._id}
+                            className="bg-white p-6 rounded-xl shadow border hover:shadow-md transition"
+                        >
+                            <div className="flex justify-between items-start">
 
-                                {role === "admin" && (
-                                    <p>User: {order.user?.name || order.user}</p>
+                                <div>
+                                    <p className="font-semibold text-lg">
+                                        Order #{order._id.slice(-6)}
+                                    </p>
+
+                                    {role === "admin" && (
+                                        <p className="text-sm text-gray-500">
+                                            User: {order.user?.name || order.user}
+                                        </p>
+                                    )}
+
+                                    <p className="mt-2 text-sm text-gray-600">
+                                        Placed on: {new Date(order.createdAt).toLocaleDateString()}
+                                    </p>
+
+                                    <p className="mt-2 font-medium">
+                                        Total: ₹{order.finalAmount}
+                                    </p>
+                                </div>
+
+                                {/* ADMIN STATUS */}
+                                {role === "admin" ? (
+                                    <CustomStatusSelect
+                                        value={order.status}
+                                        disabled={loadingId === order._id}
+                                        onChange={(newStatus) =>
+                                            updateStatus(order._id, newStatus)
+                                        }
+                                    />
+                                ) : (
+                                    <span className="px-4 py-2 text-sm rounded-full bg-blue-100 text-blue-700">
+                                        {order.status}
+                                    </span>
                                 )}
-
-                                <p>
-                                    Total: ₹{order.totalAmount || order.totalPrice}
-                                </p>
                             </div>
 
-                            {/* Admin Status Dropdown */}
-                            {role === "admin" ? (
+                            {/* ACTION BUTTON */}
+                            <div className="mt-5 flex justify-end">
+                                <button
+                                    onClick={() => {
+                                        setSelectedOrder(order);
+                                        setShowModal(true);
+                                    }}
+                                    className="flex items-center gap-2 text-blue-600 hover:underline"
+                                >
+                                    <FaEye /> View Details
+                                </button>
+                            </div>
 
-                                <CustomStatusSelect
-                                    value={order.status}
-                                    disabled={loadingId === order._id}
-                                    onChange={(newStatus) =>
-                                        updateStatus(order._id, newStatus)
-                                    }
-                                />
-
-                            ) : (
-                                <p className="font-medium">
-                                    Status: {order.status}
-                                </p>
+                            {/* USER TIMELINE */}
+                            {role !== "admin" && (
+                                <div className="mt-6">
+                                    <OrderTimeline status={order.status} />
+                                </div>
                             )}
                         </div>
+                    ))}
+                </div>
+            )}
 
-                        {/* Order Items */}
-                        <div className="mt-3">
-                            {order.items?.map((item) => (
-                                <div key={item._id}>
-                                    {item.name} x {item.quantity}
+            {/* ---------------- ORDER DETAILS MODAL ---------------- */}
+            {showModal && selectedOrder && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+                    <div className="bg-white w-full max-w-3xl rounded-xl shadow-xl p-8 relative animate-fadeIn">
+
+                        <button
+                            onClick={() => setShowModal(false)}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-black"
+                        >
+                            <FaTimes size={18} />
+                        </button>
+
+                        <h3 className="text-2xl font-bold mb-6">
+                            Order Details
+                        </h3>
+
+                        {/* ITEMS */}
+                        <div className="space-y-4 mb-6">
+                            {selectedOrder.items.map((item) => (
+                                <div
+                                    key={item._id}
+                                    className="flex justify-between items-center border-b pb-3"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        {item.image && (
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                className="w-14 h-14 object-cover rounded"
+                                            />
+                                        )}
+                                        <div>
+                                            <p className="font-medium">{item.name}</p>
+                                            <p className="text-sm text-gray-500">
+                                                ₹{item.discountPrice || item.price} × {item.quantity}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <p className="font-medium">
+                                        ₹{item.subtotal}
+                                    </p>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Timeline only for normal user */}
-                        {role !== "admin" && (
-                            <OrderTimeline status={order.status} />
-                        )}
+                        {/* SUMMARY */}
+                        <div className="bg-gray-50 p-5 rounded-lg space-y-2 text-sm">
+
+                            <div className="flex justify-between">
+                                <span>Subtotal</span>
+                                <span>₹{selectedOrder.subtotalAmount}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                                <span>Tax</span>
+                                <span>₹{selectedOrder.taxAmount.toFixed(2)}</span>
+                            </div>
+
+                            <div className="flex justify-between">
+                                <span>Delivery</span>
+                                <span>₹{selectedOrder.deliveryCharge}</span>
+                            </div>
+
+                            {selectedOrder.discountAmount > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Discount</span>
+                                    <span>-₹{selectedOrder.discountAmount}</span>
+                                </div>
+                            )}
+
+                            <hr />
+
+                            <div className="flex justify-between font-bold text-lg">
+                                <span>Total Paid</span>
+                                <span>₹{selectedOrder.finalAmount}</span>
+                            </div>
+
+                            {selectedOrder.coupon?.code && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Coupon Applied: {selectedOrder.coupon.code}
+                                </p>
+                            )}
+
+                            {selectedOrder.deliveryInstructions && (
+                                <div className="text-xs text-gray-500 mt-2">
+                                    <strong>Delivery Instructions:</strong>
+                                    <p>{selectedOrder.deliveryInstructions}</p>
+                                </div>
+                            )}
+
+                            {/* <div className="mt-3 text-xs">
+                                Payment Status:{" "}
+                                <span className="font-semibold">
+                                    {selectedOrder.paymentStatus}
+                                </span>
+                            </div> */}
+
+                        </div>
+
                     </div>
-                ))
+                </div>
             )}
+
         </div>
     );
 }

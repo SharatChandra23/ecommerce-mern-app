@@ -4,6 +4,8 @@ import ProductCard from "../components/ProductCard";
 
 import debounce from "lodash/debounce";
 import ProductSkeleton from "../components/common/ProductSkeleton";
+import AppButton from "../components/common/AppButton";
+import CustomSearchInput from "../components/common/customSearchInput";
 // import Loader from "../components/common/Loader";
 
 function Catalogue() {
@@ -73,45 +75,47 @@ function Catalogue() {
 
         {/* Categories */}
         <h3 className="font-bold mb-3">Categories</h3>
-        <button onClick={() => setCategory("")} className="block mb-2">All</button>
+        <AppButton key={'categoryBtn'} onClick={() => setCategory("")} variant="primary" fullWidth className="mb-2">All</AppButton>
         {categories.map(cat => (
-          <button
+          <AppButton
             key={cat._id}
             onClick={() => setCategory(cat._id)}
-            className="block mb-2"
+            variant="primary"
+            fullWidth
+            className="mb-2"
           >
             {cat.name}
-          </button>
+          </AppButton>
         ))}
 
         {/* Price Range */}
         <h3 className="font-bold mt-6 mb-3">Price Range</h3>
         <div className="flex flex-col gap-2">
-          <button onClick={() => { setMinPrice(0); setMaxPrice(100); }}>
+          <AppButton onClick={() => { setMinPrice(0); setMaxPrice(100); }}>
             Under $100
-          </button>
-          <button onClick={() => { setMinPrice(100); setMaxPrice(500); }}>
+          </AppButton>
+          <AppButton onClick={() => { setMinPrice(100); setMaxPrice(500); }}>
             $100 - $500
-          </button>
-          <button onClick={() => { setMinPrice(500); setMaxPrice(1000); }}>
+          </AppButton>
+          <AppButton onClick={() => { setMinPrice(500); setMaxPrice(1000); }}>
             $500 - $1000
-          </button>
-          <button onClick={() => { setMinPrice(1000); setMaxPrice(100000); }}>
+          </AppButton>
+          <AppButton onClick={() => { setMinPrice(1000); setMaxPrice(100000); }}>
             Over $1000
-          </button>
+          </AppButton>
         </div>
 
         {/* Ratings */}
         <h3 className="font-bold mt-6 mb-3">Rating</h3>
         <div className="flex flex-col gap-2">
-          <button onClick={() => setRating(4)}>4+ Stars</button>
-          <button onClick={() => setRating(3)}>3+ Stars</button>
-          <button onClick={() => setRating(2)}>2+ Stars</button>
-          <button onClick={() => setRating(1)}>1+ Stars</button>
+          <AppButton onClick={() => setRating(4)}>4+ Stars</AppButton>
+          <AppButton onClick={() => setRating(3)}>3+ Stars</AppButton>
+          <AppButton onClick={() => setRating(2)}>2+ Stars</AppButton>
+          <AppButton onClick={() => setRating(1)}>1+ Stars</AppButton>
         </div>
 
         {/* Benefits */}
-        <div className="mt-8 border-t pt-4 text-sm text-gray-600">
+        <div className="mt-8 border-t pt-4">
           <p>✓ Free Shipping</p>
           <p>✓ 30-Day Returns</p>
           <p>✓ 2-Year Warranty</p>
@@ -129,13 +133,8 @@ function Catalogue() {
           </div>
         ) : (
           <>
-            <div className="search-input">
-              <input
-                type="text"
-                placeholder="Search products..."
-                onChange={(e) => debouncedSearch(e.target.value)}
-                className="border p-2 rounded w-1/2"
-              />
+            <div className="mb-4">
+              <CustomSearchInput debouncedSearch={debouncedSearch} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -147,16 +146,17 @@ function Catalogue() {
             {/* Pagination */}
             <div className="flex justify-center mt-8 gap-3">
               {Array.from({ length: totalPages }).map((_, index) => (
-                <button
+                <AppButton
                   key={index}
                   onClick={() => setPage(index + 1)}
+                  variant="primary"
                   className={`px-4 py-2 border rounded ${page === index + 1
                     ? "bg-slate-900 text-white"
                     : ""
                     }`}
                 >
                   {index + 1}
-                </button>
+                </AppButton>
               ))}
             </div>
           </>

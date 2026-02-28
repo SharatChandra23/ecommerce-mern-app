@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../api/api";
 import toast from "react-hot-toast";
+import AppButton from "./AppButton";
+import { FaTimes } from "react-icons/fa";
 
 export default function CartCouponDrawer({
     open,
@@ -77,12 +79,11 @@ export default function CartCouponDrawer({
                             <h3 className="text-xl font-bold">
                                 Available Coupons
                             </h3>
-                            <button
+                            <AppButton
                                 onClick={onClose}
-                                className="text-red-500 font-medium"
-                            >
-                                ✕
-                            </button>
+                                variant="danger"
+                                icon={<FaTimes size={14} />}
+                            />
                         </div>
 
                         {/* Coupon List */}
@@ -111,12 +112,12 @@ export default function CartCouponDrawer({
                                             </p>
                                         </div>
 
-                                        <button
+                                        <AppButton
                                             onClick={() => applyCoupon(c)}
-                                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+                                            variant="yellow"
                                         >
                                             Apply
-                                        </button>
+                                        </AppButton>
                                     </motion.div>
                                 ))
                             )}

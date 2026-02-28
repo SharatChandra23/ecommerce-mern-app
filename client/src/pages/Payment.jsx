@@ -1,10 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import API from "../api/api";
+import { useCart } from "../context/CartContext";
+import AppButton from "../components/common/AppButton";
 
 function Payment() {
     const { orderId } = useParams();
     const navigate = useNavigate();
+    const { clearCart } = useCart();
     const [loading, setLoading] = useState(false);
 
     const handlePayment = async () => {
@@ -15,7 +18,8 @@ function Payment() {
                 orderId,
                 status: "success",
             });
-
+            // trigger the clear cart in UI cart context
+            clearCart();
             navigate("/orders");
         } catch (error) {
             console.error(error);
@@ -32,13 +36,13 @@ function Payment() {
             <div className="border p-6 rounded shadow">
                 <p className="mb-4">Card Number: 4242 4242 4242 4242</p>
 
-                <button
+                <AppButton
                     onClick={handlePayment}
                     disabled={loading}
-                    className="bg-green-600 text-white px-6 py-2 rounded"
+                    variant="orange"
                 >
                     {loading ? "Processing..." : "Pay Now"}
-                </button>
+                </AppButton>
             </div>
         </div>
     );

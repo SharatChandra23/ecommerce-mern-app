@@ -4,13 +4,15 @@ const {
     createPayment,
     getPayments,
     paymentSuccess,
+    getPaymentById,
 } = require("../controllers/paymentController");
 
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 const { adminProtect } = require("../middleware/adminMiddleware");
 
-router.post("/", protect, createPayment);
-router.post("/", adminProtect, paymentSuccess);
-router.get("/", protect, adminOnly, getPayments);
+// router.post("/", protect, createPayment);
+router.post("/", protect, paymentSuccess);
+router.get("/", protect, getPayments);
+router.get("/:id", protect, getPaymentById);
 
 module.exports = router;

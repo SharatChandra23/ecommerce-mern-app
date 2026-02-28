@@ -1,90 +1,79 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
-import { getGuestCart, saveGuestCart } from "../utils/cartUtils";
 import CartCouponDrawer from "../components/common/CartCouponDrawer";
+import { FaMinus, FaPlus, FaTrash, FaCartPlus } from "react-icons/fa";
+import { toast } from "react-hot-toast";
+import AppButton from "../components/common/AppButton";
 
 function Cart() {
+    const [animate, setAnimate] = useState(false);
     const [cartItems, setCartItems] = useState([]);
-    const navigate = useNavigate();
-    const token = localStorage.getItem("accessToken");
-
     const [showDrawer, setShowDrawer] = useState(false);
     const [discount, setDiscount] = useState(0);
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [deliveryInstructions, setDeliveryInstructions] = useState("");
 
+    const navigate = useNavigate();
+    const token = localStorage.getItem("accessToken");
+
+    const emptyCartImage = "./images/empty-cart.png";
+
     useEffect(() => {
+        if (!token) {
+            navigate("/login");
+            return;
+        }
         loadCart();
-    }, [token]);
+    }, []);
 
     useEffect(() => {
         if (appliedCoupon) {
-            // If subtotal changes after applying coupon → remove coupon
             setAppliedCoupon(null);
             setDiscount(0);
         }
     }, [cartItems]);
 
     const loadCart = async () => {
-        if (!token) {
-            const guestCart = getGuestCart();
-            setCartItems(guestCart);
-        } else {
-            const { data } = await API.get("/cart");
-            setCartItems(data.items || []);
-        }
+        const { data } = await API.get("/cart");
+        setCartItems(data?.items || []);
     };
 
-    // Increase Quantity
-    const increaseQty = async (productId) => {
-        if (!token) {
-            const updated = cartItems.map(item =>
-                item.product._id === productId
-                    ? { ...item, quantity: item.quantity + 1 }
-                    : item
-            );
-            setCartItems(updated);
-            saveGuestCart(updated);
-        } else {
-            await API.put(`/cart/increase/${productId}`);
-            loadCart();
-        }
+    const handleIncrease = (item) => {
+        setAnimate(true);
+        increaseQty(item.product._id, item.quantity);
+        setTimeout(() => setAnimate(false), 300);
     };
 
-    // Decrease Quantity
-    const decreaseQty = async (productId) => {
-        if (!token) {
-            const updated = cartItems
-                .map(item =>
-                    item.product._id === productId
-                        ? { ...item, quantity: item.quantity - 1 }
-                        : item
-                )
-                .filter(item => item.quantity > 0);
-
-            setCartItems(updated);
-            saveGuestCart(updated);
-        } else {
-            await API.put(`/cart/decrease/${productId}`);
-            loadCart();
+    // ---------------- Increase ----------------
+    const increaseQty = async (productId, stock, quantity) => {
+        if (quantity >= stock) {
+            toast.error("Stock limit reached");
+            return;
         }
+
+        await API.put(`/cart/increase/${productId}`);
+        loadCart();
     };
 
-    // Remove Item
+    // ---------------- Decrease ----------------
+    const decreaseQty = async (productId, quantity) => {
+        if (quantity === 1) {
+            await removeItem(productId);
+            return;
+        }
+
+        await API.put(`/cart/decrease/${productId}`);
+        loadCart();
+    };
+
+    // ---------------- Remove ----------------
     const removeItem = async (productId) => {
-        if (!token) {
-            const updated = cartItems.filter(
-                item => item.product._id !== productId
-            );
-            setCartItems(updated);
-            saveGuestCart(updated);
-        } else {
-            await API.delete(`/cart/${productId}`);
-            loadCart();
-        }
+        await API.delete(`/cart/${productId}`);
+        loadCart();
     };
 
+    // ---------------- Calculations ----------------
     const subtotal = cartItems.reduce(
         (acc, item) =>
             acc +
@@ -99,12 +88,33 @@ function Cart() {
     const finalAmount =
         subtotal + tax + deliveryCharge - discount;
 
-    const handleCheckout = () => {
-        if (!token) {
-            navigate("/login");
-        } else {
-            navigate("/checkout");
+
+    const freeDeliveryThreshold = 1000;
+    const remainingForFree =
+        freeDeliveryThreshold - subtotal;
+
+    // ---------------- Stock Validation ----------------
+    const validateStock = async () => {
+        const res = await API.post("/cart/validate");
+
+        if (!res.data.success) {
+            toast.error(res.data.message);
+            return false;
         }
+
+        return true;
+    };
+
+    const handleCheckout = async () => {
+        const valid = await validateStock();
+        if (!valid) return;
+
+        navigate("/checkout", {
+            state: {
+                deliveryInstructions,
+                appliedCoupon,
+            },
+        });
     };
 
     return (
@@ -113,137 +123,240 @@ function Cart() {
                 open={showDrawer}
                 onClose={() => setShowDrawer(false)}
                 subtotal={subtotal}
-                onApply={(discountAmount, code) => {
-                    setDiscount(discountAmount);
+                onApply={(amount, code) => {
+                    setDiscount(amount);
                     setAppliedCoupon(code);
                 }}
             />
 
-            <div className="max-w-6xl mx-auto p-6">
-                <h2 className="text-2xl font-bold mb-6">Your Cart</h2>
+            <div className="max-w-7xl mx-auto p-6">
 
+                {/* ---------------- EMPTY CART ---------------- */}
                 {cartItems.length === 0 ? (
-                    <div className="text-center py-20">
+                    <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 float-animation">
                         <img
-                            src="/empty-cart.png"
-                            className="w-60 mx-auto mb-4"
+                            src={emptyCartImage}
+                            alt="Empty Cart"
+                            className="w-72 mb-6"
                         />
-                        <p className="text-lg font-semibold">
-                            No items in cart
+
+                        <h2 className="text-3xl font-bold text-gray-800 mb-3">
+                            Your Cart is{" "}
+                            <span className="text-red-500">Empty!</span>
+                        </h2>
+
+                        <p className="text-gray-500 mb-6 max-w-md">
+                            Looks like you haven't added anything to your cart yet.
+                            Start shopping to fill it up.
                         </p>
+
+                        <AppButton
+                            variant="orange"
+                            size="lg"
+                            icon={<FaCartPlus />}
+                            animateIcon
+                            className="rounded-full shadow-xl"
+                            onClick={() => navigate("/")}
+                        >
+                            Start Shopping
+                        </AppButton>
                     </div>
                 ) : (
                     <>
-                        {cartItems.map((item) => (
-                            <div
-                                key={item.product._id}
-                                className="flex justify-between items-center border-b py-4"
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-3xl font-bold tracking-tight">
+                                Your Cart
+                            </h2>
+
+                            <AppButton
+                                onClick={() => navigate("/")}
+                                variant="primary"
+                                icon={<FaCartPlus size={16} />}
                             >
-                                <div>
-                                    <h3 className="font-semibold">
-                                        {item.product.name}
-                                    </h3>
-
-                                    {/* Quantity Controls */}
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <button
-                                            onClick={() => decreaseQty(item.product._id)}
-                                            className="px-2 py-1 bg-gray-200 rounded"
-                                        >
-                                            -
-                                        </button>
-
-                                        <span>{item.quantity}</span>
-
-                                        <button
-                                            onClick={() => increaseQty(item.product._id)}
-                                            className="px-2 py-1 bg-gray-200 rounded"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="text-right">
-                                    <p>${item.product.price}</p>
-
-                                    <button
-                                        onClick={() => removeItem(item.product._id)}
-                                        className="text-red-500 text-sm mt-2"
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-
-                        <div className="mt-6 bg-gray-50 rounded-xl p-6 shadow-sm">
-
-                            <h3 className="font-semibold text-lg mb-4">
-                                Order Summary
-                            </h3>
-
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span>Subtotal</span>
-                                    <span>₹{subtotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Tax (5%)</span>
-                                    <span>₹{tax.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Delivery</span>
-                                    <span>₹{deliveryCharge}</span>
-                                </div>
-                                {appliedCoupon && (
-                                    <div className="flex justify-between items-center text-green-600">
-                                        <p>
-                                            Coupon ({appliedCoupon}) Applied: -₹{discount.toFixed(2)}
-                                        </p>
-                                        <button
-                                            onClick={() => {
-                                                setAppliedCoupon(null);
-                                                setDiscount(0);
-                                            }}
-                                            className="text-red-500 text-sm underline"
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                )}
-
-                                <hr />
-
-                                <div className="flex justify-between font-bold text-lg">
-                                    <span>Total Payable</span>
-                                    <span>₹{finalAmount.toFixed(2)}</span>
-                                </div>
-
-                            </div>
-
-                            <button
-                                onClick={() => setShowDrawer(true)}
-                                className="text-indigo-600 underline mt-4">
-                                Apply Coupon
-                            </button>
-
-                            <textarea
-                                placeholder="Delivery instructions (optional)"
-                                value={deliveryInstructions}
-                                onChange={(e) =>
-                                    setDeliveryInstructions(e.target.value)
-                                }
-                                className="w-full border rounded p-2 mt-4" />
-
-                            <button
-                                onClick={handleCheckout}
-                                className="w-full bg-slate-900 text-white py-3 rounded-lg mt-4 hover:bg-slate-700 transition">
-                                Proceed to Checkout
-                            </button>
-
+                                Add More Items
+                            </AppButton>
                         </div>
 
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+                            {/* LEFT SIDE - ITEMS */}
+                            <div className="lg:col-span-2 space-y-6">
+                                {cartItems.map((item) => (
+                                    <div
+                                        key={item.product._id}
+                                        className="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition"
+                                    >
+                                        <div className="flex items-center gap-6">
+                                            <img
+                                                src={item.product.image}
+                                                alt={item.product.name}
+                                                className="w-24 h-24 object-cover rounded-lg"
+                                            />
+
+                                            <div>
+                                                <h3 className="font-semibold text-lg">
+                                                    {item.product.name}
+                                                </h3>
+
+                                                <p className="text-gray-500 text-sm">
+                                                    ₹{item.product.price}
+                                                </p>
+
+                                                {/* Quantity Controls */}
+                                                <div className="flex items-center gap-3 mt-4">
+
+                                                    <AppButton
+                                                        circle
+                                                        variant="outline"
+                                                        size="md"
+                                                        disabled={item.quantity <= 1}
+                                                        icon={<FaMinus size={12} />}
+                                                        onClick={() =>
+                                                            decreaseQty(item.product._id, item.quantity)
+                                                        }
+                                                        className="hover:bg-red-500 hover:text-white hover:border-red-500 shadow-sm"
+                                                    />
+
+                                                    <span className={`text-lg font-semibold px-4 transition-transform duration-200 
+                                                        ${animate ? "scale-125 text-emerald-600" : ""
+                                                        }`}>
+                                                        {item.quantity}
+                                                    </span>
+
+                                                    <AppButton
+                                                        circle
+                                                        variant="outline"
+                                                        size="md"
+                                                        icon={<FaPlus size={12} />}
+                                                        onClick={() => handleIncrease(item)}
+                                                        className="hover:bg-green-500 hover:text-white hover:border-red-500 shadow-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right">
+                                            <p className="font-bold text-lg">
+                                                ₹
+                                                {(
+                                                    (item.product.discountPrice ||
+                                                        item.product.price) *
+                                                    item.quantity
+                                                ).toFixed(2)}
+                                            </p>
+
+                                            <AppButton
+                                                onClick={() => removeItem(item.product._id)}
+                                                variant="primary"
+                                                icon={<FaTrash size={12} />}>
+                                                Remove
+                                            </AppButton>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* RIGHT SIDE - SUMMARY */}
+                            <div className="bg-white p-6 rounded-xl shadow-md border sticky top-24 h-fit">
+                                <h3 className="font-semibold text-xl mb-6">
+                                    Order Summary
+                                </h3>
+
+                                <div className="space-y-3 text-sm">
+                                    {subtotal < freeDeliveryThreshold && (
+                                        <div className="mb-4">
+                                            <p className="text-sm text-gray-600 mb-2">
+                                                Add ₹{remainingForFree.toFixed(2)} more to get
+                                                <span className="text-green-600 font-semibold">
+                                                    {" "}Free Delivery
+                                                </span>
+                                            </p>
+
+                                            <div className="w-full bg-gray-200 h-2 rounded-full">
+                                                <div
+                                                    className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                                    style={{
+                                                        width: `${Math.min(
+                                                            (subtotal / freeDeliveryThreshold) * 100,
+                                                            100
+                                                        )}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between">
+                                        <span>Subtotal</span>
+                                        <span>₹{subtotal.toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="flex justify-between">
+                                        <span>Tax (5%)</span>
+                                        <span>₹{tax.toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="flex justify-between">
+                                        <span>Delivery</span>
+                                        <span>₹{deliveryCharge}</span>
+                                    </div>
+
+                                    {appliedCoupon && (
+                                        <div className="flex justify-between items-center bg-green-50 border border-green-200 p-3 rounded-lg text-green-700">
+                                            <div>
+                                                <p className="font-semibold">
+                                                    Coupon Applied: {appliedCoupon}
+                                                </p>
+                                                <p className="text-sm">
+                                                    You saved ₹{discount.toFixed(2)}
+                                                </p>
+                                            </div>
+
+                                            <AppButton
+                                                onClick={() => {
+                                                    setAppliedCoupon(null);
+                                                    setDiscount(0);
+                                                }}
+                                                variant="primary"
+                                            >
+                                                Remove
+                                            </AppButton>
+                                        </div>
+                                    )}
+
+                                    <hr />
+
+                                    <div className="flex justify-between font-bold text-lg">
+                                        <span>Total Payable</span>
+                                        <span>₹{finalAmount.toFixed(2)}</span>
+                                    </div>
+                                </div>
+
+                                <AppButton
+                                    onClick={() => setShowDrawer(true)}
+                                    variant="yellow"
+                                >
+                                    Apply Coupon
+                                </AppButton>
+
+                                <textarea
+                                    placeholder="Delivery instructions (optional)"
+                                    value={deliveryInstructions}
+                                    onChange={(e) =>
+                                        setDeliveryInstructions(e.target.value)
+                                    }
+                                    className="w-full border rounded-lg p-3 mt-4"
+                                />
+
+                                <AppButton
+                                    onClick={handleCheckout}
+                                    variant="primary"
+                                    fullWidth
+                                >
+                                    Proceed to Checkout
+                                </AppButton>
+                            </div>
+                        </div>
                     </>
                 )}
             </div>

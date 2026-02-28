@@ -45,7 +45,7 @@ exports.getProducts = async (req, res) => {
         const total = await Product.countDocuments(query);
 
         const products = await Product.find(query)
-            .select("name price category stock image description createdAt") // select only needed fields
+            .select("name price category stock image description discountPrice rating createdAt") // select only needed fields
             .populate({
                 path: "category",
                 select: "name" // only needed category fields

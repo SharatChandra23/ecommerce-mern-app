@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import API from "../api/api";
+import AppButton from "../components/common/AppButton";
 
 function AddressModal({ isOpen, onClose, editData, refresh }) {
   const [form, setForm] = useState({
@@ -129,15 +130,15 @@ function AddressModal({ isOpen, onClose, editData, refresh }) {
         </div>
 
         <div className="mt-4 flex justify-end gap-4">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <AppButton onClick={onClose} variant="danger">
             Cancel
-          </button>
-          <button
+          </AppButton>
+          <AppButton
             onClick={handleSubmit}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
+            variant="primary"
           >
             Save
-          </button>
+          </AppButton>
         </div>
       </div>
     </div>

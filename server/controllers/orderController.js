@@ -15,7 +15,24 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        // Prepare order items (snapshot)
+        // 1. Validate stock first
+        for (const item of cart.items) {
+            if (!item.product) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Product not found"
+                });
+            }
+
+            if (item.product.stock < item.quantity) {
+                return res.status(400).json({
+                    success: false,
+                    message: `${item.product.name} is out of stock`
+                });
+            }
+        }
+
+        // 2. Prepare snapshot
         const orderItems = cart.items.map(item => {
             const finalPrice =
                 item.product.discountPrice || item.product.price;
@@ -27,17 +44,16 @@ exports.createOrder = async (req, res) => {
                 price: item.product.price,
                 discountPrice: finalPrice,
                 quantity: item.quantity,
-                subtotal: finalPrice * item.quantity
+                subtotal: Number((finalPrice * item.quantity).toFixed(2))
             };
         });
 
-        // ✅ Correct subtotal
-        const subtotalAmount = orderItems.reduce(
-            (acc, item) => acc + item.subtotal,
-            0
+        // 3. Calculate subtotal
+        const subtotalAmount = Number(
+            orderItems.reduce((acc, item) => acc + item.subtotal, 0).toFixed(2)
         );
 
-        const taxAmount = subtotalAmount * 0.05;
+        const taxAmount = Number((subtotalAmount * 0.05).toFixed(2));
 
         const deliveryCharge =
             subtotalAmount > 1000 ? 0 : 50;
@@ -45,35 +61,66 @@ exports.createOrder = async (req, res) => {
         let discountAmount = 0;
         let coupon = null;
 
+        // 4. Coupon Validation
         if (couponCode) {
             const foundCoupon = await Coupon.findOne({
-                code: couponCode,
+                code: couponCode.toUpperCase(),
                 isActive: true,
                 expiryDate: { $gt: new Date() }
             });
 
-            if (foundCoupon) {
-                coupon = {
-                    code: foundCoupon.code,
-                    discountType: foundCoupon.discountType,
-                    discountValue: foundCoupon.discountValue
-                };
-
-                if (foundCoupon.discountType === "percentage") {
-                    discountAmount =
-                        (subtotalAmount * foundCoupon.discountValue) / 100;
-                } else {
-                    discountAmount = foundCoupon.discountValue;
-                }
+            if (!foundCoupon) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid or expired coupon"
+                });
             }
+
+            if (subtotalAmount < foundCoupon.minOrderAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Minimum order ₹${foundCoupon.minOrderAmount} required`
+                });
+            }
+
+            if (foundCoupon.usedCount >= foundCoupon.usageLimit) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Coupon usage limit exceeded"
+                });
+            }
+
+            coupon = {
+                code: foundCoupon.code,
+                discountType: foundCoupon.discountType,
+                discountValue: foundCoupon.discountValue
+            };
+
+            if (foundCoupon.discountType === "percentage") {
+                discountAmount =
+                    (subtotalAmount * foundCoupon.discountValue) / 100;
+            } else {
+                discountAmount = foundCoupon.discountValue;
+            }
+
+            discountAmount = Number(discountAmount.toFixed(2));
         }
 
-        const finalAmount =
-            subtotalAmount +
-            taxAmount +
-            deliveryCharge -
-            discountAmount;
+        // Prevent negative totals
+        if (discountAmount > subtotalAmount) {
+            discountAmount = subtotalAmount;
+        }
 
+        const finalAmount = Number(
+            (
+                subtotalAmount +
+                taxAmount +
+                deliveryCharge -
+                discountAmount
+            ).toFixed(2)
+        );
+
+        // 5. Create order
         const order = await Order.create({
             user: req.user.id,
             items: orderItems,

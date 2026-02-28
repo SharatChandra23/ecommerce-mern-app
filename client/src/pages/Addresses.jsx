@@ -1,11 +1,20 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
 import AddressModal from "./AddressModal";
+import { FaMapMarkerAlt, FaEdit, FaTrash, FaCheck, FaPlus } from "react-icons/fa";
+import AppButton from "../components/common/AppButton";
+import AppHeading from "../components/common/AppHeading";
 
-function Addresses() {
+function Addresses({
+  type = "profile",
+  selectedAddressId,
+  onSelectAddress
+}) {
   const [addresses, setAddresses] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+
+  const isCheckout = type === "checkout";
 
   const loadAddresses = async () => {
     const res = await API.get("/user/addresses");
@@ -24,62 +33,111 @@ function Addresses() {
   const deleteAddress = async (id) => {
     await API.delete(`/user/addresses/${id}`);
     loadAddresses();
-  }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-6">My Addresses</h2>
+    <div className="max-w-5xl mx-auto mt-10">
 
-      <button
-        onClick={() => setModalOpen(true)}
-        className="mb-6 bg-blue-600 text-white px-4 py-2 rounded"
-      >
-        Add Address
-      </button>
+      {/* Heading Row */}
+      <div className="flex items-center justify-between mb-10">
 
-      <div className="grid gap-4">
+        <AppHeading
+          level={4}
+          align="center"
+          variant="primary"
+        >
+          {isCheckout ? "Shipping Address" : "My Addresses"}
+        </AppHeading>
+
+
+        <AppButton
+          onClick={() => setModalOpen(true)}
+          variant="primary"
+          icon={<FaPlus size={12} />}
+        >
+          Add Address
+        </AppButton>
+      </div>
+
+      <div className="grid gap-6">
+
         {addresses.map((addr) => (
           <div
             key={addr._id}
-            className="border p-4 rounded shadow relative"
-          >
+            onClick={() => isCheckout && onSelectAddress(addr._id)}
+            className={`relative p-6 rounded-xl border bg-white
+            transition-all duration-300 shadow-sm cursor-pointer
+            transition-all duration-300 ease-in-out
+            ${isCheckout && selectedAddressId === addr._id
+                ? "border-blue-500 ring-2 ring-blue-200 bg-blue-50"
+                : "hover:shadow-md"
+              }`}>
+
+            {/* Default Badge */}
             {addr.isDefault && (
-              <span className="absolute top-2 right-2 text-xs bg-green-600 text-white px-3 py-1 rounded-full shadow">
+              <span className="absolute top-5 right-5 text-xs bg-green-600 text-white px-3 py-1 rounded-full shadow">
                 Default
               </span>
             )}
 
-            <p>{addr.fullName}</p>
-            <p>{addr.addressLine}</p>
-            <p>{addr.city} - {addr.postalCode}</p>
+            <div className="flex gap-4 items-start">
 
-            <div className="mt-3 flex gap-4">
-              <button
-                onClick={() => {
-                  setEditData(addr);
-                  setModalOpen(true);
-                }}
-                className="text-blue-600"
-              >
-                Edit
-              </button>
+              {/* Address Icon */}
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
+                <FaMapMarkerAlt size={18} />
+              </div>
 
-              <button
-                onClick={() => deleteAddress(addr._id)}
-                className="text-red-600"
-              >
-                Delete
-              </button>
+              {/* Address Info */}
+              <div className="flex-1">
+                <p className="font-semibold text-lg">
+                  {addr.fullName}
+                </p>
+                <p className="text-gray-600 mt-1">
+                  {addr.addressLine}
+                </p>
+                <p className="text-gray-600">
+                  {addr.city} - {addr.postalCode}
+                </p>
 
-              <button
-                onClick={() => setDefault(addr._id)}
-                className="text-green-600"
-              >
-                Set Default
-              </button>
+                {/* Profile Actions */}
+                {!isCheckout && (
+                  <div className="mt-5 flex gap-4">
+
+                    <AppButton
+                      icon={<FaEdit size={12} />}
+                      onClick={() => {
+                        setEditData(addr);
+                        setModalOpen(true);
+                      }}
+                      variant="primary">
+                      Edit
+                    </AppButton>
+
+                    <AppButton
+                      onClick={() => deleteAddress(addr._id)}
+                      variant="danger"
+                      icon={<FaTrash size={12} />}>
+                      Delete
+                    </AppButton>
+
+                    {!addr.isDefault && (
+                      <AppButton
+                        onClick={() => setDefault(addr._id)}
+                        variant="success"
+                        icon={<FaCheck size={12} />}
+                      >
+                        Set Default
+                      </AppButton>
+                    )}
+
+                  </div>
+                )}
+
+              </div>
             </div>
           </div>
         ))}
+
       </div>
 
       <AddressModal

@@ -15,11 +15,11 @@ import Payment from "./pages/Payment";
 import ProductList from "./pages/admin/ProductList";
 import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
-import Orders from "./pages/Orders";
 import Addresses from "./pages/Addresses";
 import Profile from "./pages/Profile";
 import { Toaster } from "react-hot-toast";
 import AdminCoupons from "./pages/admin/AdminCoupons";
+import OrdersList from "./pages/orders/OrdersList";
 
 function App() {
   return (
@@ -73,7 +73,7 @@ function App() {
 
               <Route path="/orders" element={
                 <ProtectedRoute>
-                  <Orders />
+                  <OrdersList />
                 </ProtectedRoute>
               } />
 

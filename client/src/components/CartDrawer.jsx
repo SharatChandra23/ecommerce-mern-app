@@ -1,11 +1,23 @@
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import AppButton from "./common/AppButton";
 
 function CartDrawer({ isOpen, onClose }) {
     const { user } = useContext(AuthContext);
     const { cartItems, cartTotal, removeItem } = useCart();
+    const navigate = useNavigate();
+
+    const navigatoToSignup = () => {
+        navigate("/signup?redirect=checkout");
+        onClose();
+    };
+
+    const navigatoToCheckout = () => {
+        navigate("/signup?redirect=checkout");
+        onClose();
+    };
 
     return (
         <>
@@ -24,7 +36,7 @@ function CartDrawer({ isOpen, onClose }) {
             >
                 <div className="p-4 flex justify-between border-b">
                     <h2 className="font-bold text-lg">Your Cart</h2>
-                    <button onClick={onClose}>✕</button>
+                    <AppButton onClick={onClose} variant="danger">Close</AppButton>
                 </div>
 
                 <div className="p-4 overflow-y-auto h-[70%]">
@@ -43,12 +55,13 @@ function CartDrawer({ isOpen, onClose }) {
                                     </p>
                                 </div>
 
-                                <button
+                                <AppButton
                                     onClick={() => removeItem(item._id)}
-                                    className="text-red-500 text-sm"
+                                    variant="danger"
+                                    className="text-sm"
                                 >
                                     Remove
-                                </button>
+                                </AppButton>
                             </div>
                         ))
                     )}
@@ -60,21 +73,20 @@ function CartDrawer({ isOpen, onClose }) {
                     </p>
 
                     {!user ? (
-                        <Link
-                            to="/signup?redirect=checkout"
-                            onClick={onClose}
-                            className="block bg-slate-900 text-white text-center py-2 rounded"
+                        <AppButton
+                            onClick={navigatoToSignup}
+                            fullWidth
                         >
                             Checkout
-                        </Link>
+                        </AppButton>
                     ) : (
-                        <Link
-                            to="/checkout"
-                            onClick={onClose}
-                            className="block bg-slate-900 text-white text-center py-2 rounded"
+
+                        <AppButton
+                            onClick={navigatoToCheckout}
+                            fullWidth
                         >
                             Checkout
-                        </Link>
+                        </AppButton>
                     )}
                 </div>
             </div>

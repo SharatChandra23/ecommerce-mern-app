@@ -2,6 +2,8 @@ import { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import AppHeading from "../components/common/AppHeading";
+import AppButton from "../components/common/AppButton";
 
 function Login() {
     const { mergeGuestCart } = useCart();
@@ -50,12 +52,17 @@ function Login() {
     };
 
     return (
-        <div className="flex justify-center py-20 bg-gray-100 min-h-screen">
+        <div className="flex justify-center py-20 bg-gray-100">
             <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-lg">
 
-                <h2 className="text-3xl font-bold text-center mb-8">
+                <AppHeading
+                    level={3}
+                    align="center"
+                    variant="primary"
+                    className="mb-8"
+                >
                     Login
-                </h2>
+                </AppHeading>
 
                 {error && (
                     <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm">
@@ -98,16 +105,18 @@ function Login() {
                     </div>
 
                     {/* Submit Button */}
-                    <button
+                    <AppButton
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-3 rounded-lg font-semibold transition duration-300 ${loading
+                        variant="primary"
+                        fullWidth
+                        className={`${loading
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-slate-900 text-white hover:bg-slate-800"
                             }`}
                     >
                         {loading ? "Signing In..." : "Sign In"}
-                    </button>
+                    </AppButton>
 
                 </form>
 
