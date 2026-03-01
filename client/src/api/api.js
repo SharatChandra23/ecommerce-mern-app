@@ -28,7 +28,8 @@ API.interceptors.response.use(
 
         if (
             error.response?.status === 401 &&
-            !originalRequest._retry
+            !originalRequest._retry &&
+            message !== "Not authorized, no token"
         ) {
             originalRequest._retry = true;
 
@@ -47,8 +48,26 @@ API.interceptors.response.use(
             } catch {
                 localStorage.removeItem("accessToken");
                 localStorage.removeItem("user");
+                // Save redirect path
+                sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+
+                window.location.href = "/login";
                 return Promise.reject(error);
             }
+        }
+
+        // ================= NO TOKEN CASE =================
+        if (
+            error.response?.status === 401 &&
+            message === "Token invalid or expired"
+        ) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("user");
+
+            // Save current page for redirect after login
+            sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+
+            window.location.href = "/login";
         }
 
         return Promise.reject(error);

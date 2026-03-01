@@ -47,10 +47,14 @@ function AppHeading({
     right: "text-right"
   };
 
-  return (
-    <div className={`${alignment[align]} ${className}`}>
+  const textUppercase = {
+    "text-tranform": "uppercase"
+  };
 
-      <Tag className={`${base} ${sizes[level]} ${variants[variant]}`}>
+  return (
+    <div className={`${alignment[align]} ${className}`} style={textUppercase}>
+
+      <Tag className={`${base} ${sizes[level]} ${variants[variant]}`} style={textUppercase}>
         {children}
       </Tag>
 

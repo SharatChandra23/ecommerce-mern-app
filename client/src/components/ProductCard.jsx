@@ -1,6 +1,6 @@
 import StarRating from "./StarRating";
 import { useCart } from "../context/CartContext";
-import { FaMinus, FaPlus } from "react-icons/fa";
+import { FaCartArrowDown, FaMinus, FaPlus } from "react-icons/fa";
 import AppButton from "../components/common/AppButton";
 import { useState } from "react";
 
@@ -122,6 +122,7 @@ function ProductCard({ product }) {
             variant="primary"
             className={`${bouncing ? "animate-bounce" : ""} rounded-xl`}
             onClick={handleAdd}
+            icon={<FaCartArrowDown size={16} />}
             fullWidth
           >
             Add to Cart

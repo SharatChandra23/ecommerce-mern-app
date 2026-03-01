@@ -3,6 +3,8 @@ import { useState } from "react";
 import API from "../api/api";
 import { useCart } from "../context/CartContext";
 import AppButton from "../components/common/AppButton";
+import { FaCreditCard } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 function Payment() {
     const { orderId } = useParams();
@@ -23,7 +25,7 @@ function Payment() {
             navigate("/orders");
         } catch (error) {
             console.error(error);
-            alert("Payment failed");
+            toast.error("Payment failed: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -40,6 +42,7 @@ function Payment() {
                     onClick={handlePayment}
                     disabled={loading}
                     variant="orange"
+                    icon={<FaCreditCard size={16} />}
                 >
                     {loading ? "Processing..." : "Pay Now"}
                 </AppButton>

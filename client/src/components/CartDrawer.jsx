@@ -3,6 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import AppButton from "./common/AppButton";
+import { FaShoppingBag, FaTimes, FaTrash } from "react-icons/fa";
 
 function CartDrawer({ isOpen, onClose }) {
     const { user } = useContext(AuthContext);
@@ -36,7 +37,7 @@ function CartDrawer({ isOpen, onClose }) {
             >
                 <div className="p-4 flex justify-between border-b">
                     <h2 className="font-bold text-lg">Your Cart</h2>
-                    <AppButton onClick={onClose} variant="danger">Close</AppButton>
+                    <AppButton onClick={onClose} variant="danger" icon={<FaTimes size={16} />}>Close</AppButton>
                 </div>
 
                 <div className="p-4 overflow-y-auto h-[70%]">
@@ -49,7 +50,7 @@ function CartDrawer({ isOpen, onClose }) {
                                 className="flex justify-between items-center mb-4"
                             >
                                 <div>
-                                    <p className="font-semibold">{item.name}</p>
+                                    <p className="font-semibold">{item.product.name}</p>
                                     <p className="text-sm text-gray-500">
                                         Qty: {item.quantity}
                                     </p>
@@ -59,9 +60,8 @@ function CartDrawer({ isOpen, onClose }) {
                                     onClick={() => removeItem(item._id)}
                                     variant="danger"
                                     className="text-sm"
-                                >
-                                    Remove
-                                </AppButton>
+                                    icon={<FaTrash size={16} />}
+                                />
                             </div>
                         ))
                     )}
@@ -75,6 +75,7 @@ function CartDrawer({ isOpen, onClose }) {
                     {!user ? (
                         <AppButton
                             onClick={navigatoToSignup}
+                            icon={<FaShoppingBag size={16} />}
                             fullWidth
                         >
                             Checkout
@@ -83,6 +84,7 @@ function CartDrawer({ isOpen, onClose }) {
 
                         <AppButton
                             onClick={navigatoToCheckout}
+                            icon={<FaShoppingBag size={16} />}
                             fullWidth
                         >
                             Checkout

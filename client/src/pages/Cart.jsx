@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 import CartCouponDrawer from "../components/common/CartCouponDrawer";
-import { FaMinus, FaPlus, FaTrash, FaCartPlus } from "react-icons/fa";
+import { FaMinus, FaPlus, FaTrash, FaCartPlus, FaShoppingBag, FaTicketAlt } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import AppButton from "../components/common/AppButton";
 
@@ -263,25 +263,22 @@ function Cart() {
                                 </h3>
 
                                 <div className="space-y-3 text-sm">
-                                    {subtotal < freeDeliveryThreshold && (
+
+                                    {(subtotal < freeDeliveryThreshold) && (
                                         <div className="mb-4">
                                             <p className="text-sm text-gray-600 mb-2">
                                                 Add ₹{remainingForFree.toFixed(2)} more to get
                                                 <span className="text-green-600 font-semibold">
-                                                    {" "}Free Delivery
+                                                    Free Delivery
                                                 </span>
                                             </p>
 
                                             <div className="w-full bg-gray-200 h-2 rounded-full">
-                                                <div
-                                                    className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                                <div className="bg-green-500 h-2 rounded-full transition-all duration-500"
                                                     style={{
-                                                        width: `${Math.min(
-                                                            (subtotal / freeDeliveryThreshold) * 100,
-                                                            100
-                                                        )}%`,
-                                                    }}
-                                                />
+                                                        width: `${Math.min((subtotal / freeDeliveryThreshold) * 100, 100)}%`
+                                                    }}>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -335,6 +332,7 @@ function Cart() {
                                 <AppButton
                                     onClick={() => setShowDrawer(true)}
                                     variant="yellow"
+                                    icon={<FaTicketAlt size={16} />}
                                 >
                                     Apply Coupon
                                 </AppButton>
@@ -351,6 +349,7 @@ function Cart() {
                                 <AppButton
                                     onClick={handleCheckout}
                                     variant="primary"
+                                    icon={<FaShoppingBag size={16} />}
                                     fullWidth
                                 >
                                     Proceed to Checkout

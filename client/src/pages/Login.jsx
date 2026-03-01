@@ -21,10 +21,6 @@ function Login() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const from = location.state?.from?.pathname || "/";
-
-    const redirect = new URLSearchParams(location.search).get("redirect") || "/";
-
     const handleChange = (e) => {
         setForm({
             ...form,
@@ -39,8 +35,12 @@ function Login() {
 
         try {
             await login(form.email, form.password);
-            // navigate(from, { replace: true });
-            navigate(`/${redirect}`);
+
+            const redirectPath =
+                sessionStorage.getItem("redirectAfterLogin") || "/";
+            sessionStorage.removeItem("redirectAfterLogin");
+            navigate(redirectPath);
+
             await mergeGuestCart();
         } catch (err) {
             setError(

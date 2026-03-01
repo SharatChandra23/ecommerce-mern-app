@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api/api";
-import { FaMapMarkerAlt } from "react-icons/fa";
+import { FaShoppingBag } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import Addresses from "./Addresses";
 import AppButton from "../components/common/AppButton";
@@ -162,6 +162,7 @@ function Checkout() {
             variant="primary"
             fullWidth
             className="mt-3"
+            icon={<FaShoppingBag size={16} />}
           >
             {loading ? "Processing..." : "Proceed to Payment"}
           </AppButton>
