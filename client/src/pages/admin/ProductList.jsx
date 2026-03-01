@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import API from "../../api/api";
+import AppButton from "../../components/common/AppButton";
+import { FaPlus } from "react-icons/fa";
 
 export default function ProductList() {
+    const BASE_URL = import.meta.env.VITE_API_URL;
     const [products, setProducts] = useState([]);
+    const navigate = useNavigate();
 
     const fetchProducts = async () => {
         const { data } = await API.get("/products");
@@ -25,12 +29,14 @@ export default function ProductList() {
         <div className="max-w-6xl mx-auto mt-10">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Admin Products</h2>
-                <Link
-                    to="/admin/add-product"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+
+                <AppButton
+                    onClick={() => navigate("/admin/add-product")}
+                    variant="primary"
+                    icon={<FaPlus size={16} />}
                 >
-                    + Add Product
-                </Link>
+                    Add Product
+                </AppButton>
             </div>
 
             <div className="bg-white shadow-lg rounded-2xl overflow-hidden">
@@ -50,7 +56,7 @@ export default function ProductList() {
                             <tr key={product._id} className="border-t">
                                 <td className="p-4">
                                     <img
-                                        src={product.image}
+                                        src={`${BASE_URL}${product.image}`}
                                         alt={product.name}
                                         className="w-16 h-16 object-cover rounded-lg"
                                     />
@@ -59,18 +65,18 @@ export default function ProductList() {
                                 <td>${product.price}</td>
                                 <td>{product.stock}</td>
                                 <td className="space-x-2">
-                                    <Link
-                                        to={`/admin/edit-product/${product._id}`}
-                                        className="bg-green-500 text-white px-3 py-1 rounded-lg"
+                                    <AppButton
+                                        onClick={() => navigate(`/admin/edit-product/${product._id}`)}
+                                        variant="yellow"
                                     >
                                         Edit
-                                    </Link>
-                                    <button
+                                    </AppButton>
+                                    <AppButton
                                         onClick={() => deleteProduct(product._id)}
-                                        className="bg-red-500 text-white px-3 py-1 rounded-lg"
+                                        variant="danger"
                                     >
                                         Delete
-                                    </button>
+                                    </AppButton>
                                 </td>
                             </tr>
                         ))}
@@ -83,6 +89,6 @@ export default function ProductList() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

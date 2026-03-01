@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import API from "../../api/api";
 import toast from "react-hot-toast";
+import AppButton from "../../components/common/AppButton";
+import { FaEdit, FaTicketAlt, FaTrash } from "react-icons/fa";
 
 export default function AdminCoupons() {
     const [coupons, setCoupons] = useState([]);
@@ -76,16 +78,17 @@ export default function AdminCoupons() {
 
             <div className="flex justify-between mb-4">
                 <h2 className="text-2xl font-bold">Coupons</h2>
-                <button
+                <AppButton
                     onClick={() => {
                         setForm({});
                         setEditingCoupon(null);
                         setShowModal(true);
                     }}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+                    variant="orange"
+                    icon={<FaTicketAlt size={16} />}
                 >
-                    + Create Coupon
-                </button>
+                    Create Coupon
+                </AppButton>
             </div>
 
             {/* Filters */}
@@ -131,22 +134,24 @@ export default function AdminCoupons() {
                                 {c.isActive ? "Active" : "Inactive"}
                             </td>
                             <td className="space-x-2">
-                                <button
+                                <AppButton
+                                    variant="yellow"
+                                    icon={<FaEdit size={16} />}
                                     onClick={() => {
                                         setForm(c);
                                         setEditingCoupon(c);
                                         setShowModal(true);
                                     }}
-                                    className="text-blue-600"
                                 >
                                     Edit
-                                </button>
-                                <button
+                                </AppButton>
+                                <AppButton
+                                    variant="danger"
+                                    icon={<FaTrash size={16} />}
                                     onClick={() => handleDelete(c._id)}
-                                    className="text-red-600"
                                 >
                                     Delete
-                                </button>
+                                </AppButton>
                             </td>
                         </tr>
                     ))}
@@ -279,20 +284,19 @@ export default function AdminCoupons() {
 
                             {/* Buttons */}
                             <div className="flex gap-3 mt-4">
-                                <button
+                                <AppButton
+                                    variant="danger"
                                     onClick={() => setShowModal(false)}
-                                    className="w-full border border-gray-400 py-2 rounded-lg hover:bg-gray-100"
                                 >
                                     Cancel
-                                </button>
+                                </AppButton>
 
-                                <button
+                                <AppButton
                                     onClick={handleSubmit}
-                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 
-                       text-white py-2 rounded-lg hover:opacity-90 transition"
+                                    variant="orange"
                                 >
                                     Save Coupon
-                                </button>
+                                </AppButton>
                             </div>
 
                         </div>

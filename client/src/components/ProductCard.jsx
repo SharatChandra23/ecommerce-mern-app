@@ -2,11 +2,13 @@ import StarRating from "./StarRating";
 import { useCart } from "../context/CartContext";
 import { FaCartArrowDown, FaMinus, FaPlus } from "react-icons/fa";
 import AppButton from "../components/common/AppButton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function ProductCard({ product }) {
+  const BASE_URL = import.meta.env.VITE_API_URL;
   const [bouncing, setBouncing] = useState(false);
   const [animateQty, setAnimateQty] = useState(false);
+  const [imagePath, setImagePath] = useState("");
 
   const {
     cartItems,
@@ -46,15 +48,21 @@ function ProductCard({ product }) {
 
   const discountPercent = hasDiscount
     ? Math.round(
-        ((product.price - product.discountPrice) /
-          product.price) *
-          100
-      )
+      ((product.price - product.discountPrice) /
+        product.price) *
+      100
+    )
     : 0;
 
   const finalPrice = hasDiscount
     ? product.discountPrice
     : product.price;
+
+  useEffect(() => {
+    if (product && product?.image) {
+      setImagePath(`${BASE_URL}${product.image}`);
+    }
+  }, []);
 
   return (
     <div
@@ -73,12 +81,12 @@ function ProductCard({ product }) {
       {/* ================= IMAGE ================= */}
       <div className="relative overflow-hidden">
 
-        <img
-          src={product.image}
+        {imagePath && (<img
+          src={imagePath}
           alt={product.name}
           className="h-56 w-full object-cover
           group-hover:scale-105 transition-transform duration-500"
-        />
+        />)}
 
         {/* Discount Badge */}
         {hasDiscount && (
@@ -145,9 +153,8 @@ function ProductCard({ product }) {
 
             {/* Quantity */}
             <span
-              className={`text-lg font-semibold px-4 transition-transform ${
-                animateQty ? "scale-125 text-emerald-600" : ""
-              }`}
+              className={`text-lg font-semibold px-4 transition-transform ${animateQty ? "scale-125 text-emerald-600" : ""
+                }`}
             >
               {cartItem.quantity}
             </span>

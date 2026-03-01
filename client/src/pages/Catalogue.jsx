@@ -6,6 +6,7 @@ import debounce from "lodash/debounce";
 import ProductSkeleton from "../components/common/ProductSkeleton";
 import AppButton from "../components/common/AppButton";
 import CustomSearchInput from "../components/common/customSearchInput";
+import { FaCheck } from "react-icons/fa";
 // import Loader from "../components/common/Loader";
 
 function Catalogue() {
@@ -18,7 +19,7 @@ function Catalogue() {
   const [page, setPage] = useState(1);
 
   const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(100000);
+  const [maxPrice, setMaxPrice] = useState(Number.MAX_SAFE_INTEGER);
   const [rating, setRating] = useState(0);
 
   const [totalPages, setTotalPages] = useState(1);
@@ -116,9 +117,9 @@ function Catalogue() {
 
         {/* Benefits */}
         <div className="mt-8 border-t pt-4">
-          <p>✓ Free Shipping</p>
-          <p>✓ 30-Day Returns</p>
-          <p>✓ 2-Year Warranty</p>
+          <p className="flex gap-1 justify-center align-center"> <span> <FaCheck size={14} /> </span> <span>Free Shipping </span> </p>
+          <p className="flex gap-1 justify-center align-center"> <span> <FaCheck size={14} /> </span> <span>30-Day Returns </span></p>
+          <p className="flex gap-1 justify-center align-center"> <span> <FaCheck size={14} /> </span> <span> 2-Year Warranty </span></p>
         </div>
 
       </div>

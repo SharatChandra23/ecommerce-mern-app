@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import AppButton from "../components/common/AppButton";
 
 function Cart() {
+    const BASE_URL = import.meta.env.VITE_API_URL;
     const [animate, setAnimate] = useState(false);
     const [cartItems, setCartItems] = useState([]);
     const [showDrawer, setShowDrawer] = useState(false);
@@ -188,7 +189,7 @@ function Cart() {
                                     >
                                         <div className="flex items-center gap-6">
                                             <img
-                                                src={item.product.image}
+                                                src={`${BASE_URL}${item.product.image}`}
                                                 alt={item.product.name}
                                                 className="w-24 h-24 object-cover rounded-lg"
                                             />

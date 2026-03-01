@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const path = require("path");
+
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 // const mongoSanitize = require("express-mongo-sanitize");
@@ -24,7 +26,9 @@ connectDB();
 // ===============================
 
 // Security headers
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+}));
 
 // Prevent NoSQL injection
 // app.use(mongoSanitize());
@@ -39,6 +43,7 @@ app.use(compression());
 const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:3000",
+    "http://localhost:5000",
     process.env.FRONTEND_URL,
 ].filter(Boolean); // remove undefined values
 
@@ -62,6 +67,7 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ===============================
 //  RATE LIMITING (Production Only)

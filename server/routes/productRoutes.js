@@ -8,14 +8,21 @@ const {
     deleteProduct,
 } = require("../controllers/productController");
 
-const { protect, adminOnly } = require("../middleware/authMiddleware");
 const { adminProtect } = require("../middleware/adminMiddleware");
+const upload = require("../middleware/uploadMiddleware");
 
 router.get("/", getProducts);
 router.get("/:id", getProductById);
 
-router.post("/", adminProtect, createProduct);
-router.put("/:id", adminProtect, updateProduct);
+router.post("/",
+    adminProtect,
+    upload.single("image"),  // field name must match frontend
+    createProduct);
+
+router.put("/:id",
+    adminProtect,
+    upload.single("image"),  // field name must match frontend
+    updateProduct);
 router.delete("/:id", adminProtect, deleteProduct);
 
 module.exports = router;
