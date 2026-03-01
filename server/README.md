@@ -20,6 +20,7 @@ This is the backend API for the MERN E-Commerce Application.
 ------------------------------------------------------------------------
 
 ##  Folder Structure
+
 ```bash
 │
 ├── config/
@@ -31,7 +32,7 @@ This is the backend API for the MERN E-Commerce Application.
 ├── uploads/
 ├── server.js
 └── seedAdmin.js
-
+```
 ------------------------------------------------------------------------
 
 ##  Authentication

@@ -19,6 +19,7 @@ React with Vite.
 ------------------------------------------------------------------------
 
 ##  Folder Structure
+
 ```bash
 │
 ├── api/ # Axios configuration
@@ -29,7 +30,7 @@ React with Vite.
 ├── utils/ # Utility functions
 ├── App.jsx
 └── main.jsx
-
+```
 ------------------------------------------------------------------------
 
 ##  Features
