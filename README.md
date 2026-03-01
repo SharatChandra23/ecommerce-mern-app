@@ -35,7 +35,7 @@ and simulated payment integration.
 ------------------------------------------------------------------------
 
 ##  Project Structure (Monorepo)
-
+```bash
 ecommerce-mern-app/ 
 │
 ├── client/ # React Vite frontend

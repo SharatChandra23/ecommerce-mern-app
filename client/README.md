@@ -19,7 +19,7 @@ React with Vite.
 ------------------------------------------------------------------------
 
 ##  Folder Structure
-
+```bash
 │
 ├── api/ # Axios configuration
 ├── components/ # Reusable UI components
