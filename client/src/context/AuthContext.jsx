@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
 export const AuthContext = createContext();
@@ -6,51 +7,80 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-    // Load user on app start
+    const clearAuth = useCallback(() => {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
+        setUser(null);
+    }, []);
+
+    const handleUnauthorized = useCallback(() => {
+        clearAuth();
+        sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+        navigate("/login", { replace: true });
+    }, [clearAuth, navigate]);
+
+    //  Listen for unauthorized events fired by api.js
+    useEffect(() => {
+        window.addEventListener("unauthorized", handleUnauthorized);
+        return () => window.removeEventListener("unauthorized", handleUnauthorized);
+    }, [handleUnauthorized]);
+
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                // Restore instantly from localStorage
+                // Always fetch CSRF first, regardless of login state
+                const csrfRes = await API.get("/auth/csrf-token", { skipAuth: true });
+                sessionStorage.setItem("csrfToken", csrfRes.data.csrfToken);
+
+                //  Restore user instantly from localStorage
                 const storedUser = localStorage.getItem("user");
                 if (storedUser) {
                     setUser(JSON.parse(storedUser));
                 }
 
-                // Always validate with backend
-                const csrfRes = await API.get("/auth/csrf-token");
-                sessionStorage.setItem("csrfToken", csrfRes.data.csrfToken);
+                const storedToken = localStorage.getItem("accessToken");
 
+                //  If no token at all, don't even call /auth/me
+                if (!storedToken) {
+                    setLoading(false);
+                    return;
+                }
+
+                //  Now validate session with backend
                 const res = await API.get("/auth/me");
-
                 setUser(res.data);
                 localStorage.setItem("user", JSON.stringify(res.data));
 
-            } catch {
-                localStorage.removeItem("user");
-                localStorage.removeItem("accessToken");
-                setUser(null);
+            } catch (err) {
+                //  Only clear auth on actual 401 — not network/server errors
+                if (err.response?.status === 401) {
+                    clearAuth(); // silently clear, don't redirect
+                    // ProtectedRoute will handle navigation
+                } else {
+                    // Network error / 500 — keep stored user, don't log out
+                    console.warn("Auth check failed (non-401), keeping session:", err.message);
+                }
             } finally {
-                setLoading(false);
+                setLoading(false); //  Always unblock the app
             }
         };
 
         initializeAuth();
-    }, []);
+    }, [clearAuth]);
 
     const login = async (email, password) => {
         const res = await API.post("/auth/login", { email, password });
-
         const { accessToken, user } = res.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("user", JSON.stringify(user));
-        setUser(user); // backend returns user object
+        setUser(user);
         return user;
     };
 
     const signup = async (formData) => {
         const res = await API.post("/auth/signup", formData);
-
         const { accessToken, user } = res.data;
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("user", JSON.stringify(user));
@@ -62,22 +92,12 @@ export const AuthProvider = ({ children }) => {
         try {
             await API.post("/auth/logout");
         } catch { }
-
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("user");
-        setUser(null);
+        clearAuth();
+        navigate("/login", { replace: true });
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900"></div>
-            </div>
-        );
-    }
-
     return (
-        <AuthContext.Provider value={{ user, login, signup, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, signup, logout, loading, handleUnauthorized }}>
             {children}
         </AuthContext.Provider>
     );

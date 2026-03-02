@@ -1,5 +1,5 @@
-import { useContext } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 
 function ProtectedRoute({ children, role }) {
@@ -17,21 +17,15 @@ function ProtectedRoute({ children, role }) {
 
   // If not logged in
   if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location }}
-      />
-    );
+    //  Pass current location as state so Login.jsx can redirect back
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Role-based protection (if provided)
   if (role && user.role !== role) {
     return <Navigate to="/" replace />;
   }
 
   return children;
-}
+};
 
 export default ProtectedRoute;

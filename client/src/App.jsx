@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -110,6 +110,10 @@ function App() {
                     <EditProduct />
                   </ProtectedRoute>
                 } />
+
+              <Route
+                path="*"
+                element={<Navigate to="/" replace />} />
 
             </Route>
 

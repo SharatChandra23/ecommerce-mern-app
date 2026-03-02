@@ -16,7 +16,7 @@ function CartDrawer({ isOpen, onClose }) {
     };
 
     const navigatoToCheckout = () => {
-        navigate("/signup?redirect=checkout");
+        navigate("cart");
         onClose();
     };
 
@@ -46,7 +46,7 @@ function CartDrawer({ isOpen, onClose }) {
                     ) : (
                         cartItems.map((item) => (
                             <div
-                                key={item._id}
+                                key={item.product._id}
                                 className="flex justify-between items-center mb-4"
                             >
                                 <div>
@@ -57,7 +57,8 @@ function CartDrawer({ isOpen, onClose }) {
                                 </div>
 
                                 <AppButton
-                                    onClick={() => removeItem(item._id)}
+                                    key={'btn' + item.product._id}
+                                    onClick={() => removeItem(item.product._id)}
                                     variant="danger"
                                     className="text-sm"
                                     icon={<FaTrash size={16} />}
@@ -69,7 +70,7 @@ function CartDrawer({ isOpen, onClose }) {
 
                 <div className="p-4 border-t">
                     <p className="font-bold mb-3">
-                        Total: ${cartTotal}
+                        Total: ₹{cartTotal}
                     </p>
 
                     {!user ? (
