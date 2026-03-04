@@ -7,6 +7,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [logoutLoading, setLogoutLoading] = useState(false);
     const navigate = useNavigate();
 
     const clearAuth = useCallback(() => {
@@ -89,11 +90,19 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
+        if (logoutLoading) return; // prevent double-clicks
+        setLogoutLoading(true);
         try {
             await API.post("/auth/logout");
-        } catch { }
+        } catch (err) {
+            console.warn("Server logout failed:", err); // non-critical, always proceed
+        }
+
+        // Clean up any stale redirect from previous session
+        sessionStorage.removeItem("redirectAfterLogin");
+
         clearAuth();
-        navigate("/login", { replace: true });
+        window.location.href = "/login"; // navigates + reloads in one step
     };
 
     return (

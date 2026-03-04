@@ -36,7 +36,7 @@ function AddressModal({ isOpen, onClose, editData, refresh }) {
     if (currentUser && currentUser?.name) {
       setForm({
         fullName: currentUser.name,
-        phone: currentUser.phoneNumber,
+        phone: currentUser.phoneNumber || "7845153645",
         addressLine: "",
         city: "",
         postalCode: "",
@@ -95,7 +95,6 @@ function AddressModal({ isOpen, onClose, editData, refresh }) {
           />
 
           <input
-            disabled={true}
             name="phone"
             value={form.phone}
             onChange={handleChange}

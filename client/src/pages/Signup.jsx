@@ -2,10 +2,11 @@ import { useContext, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { useCart } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import AppHeading from "../components/common/AppHeading";
 import AppButton from "../components/common/AppButton";
+import { getGuestCart } from "../utils/cartStorage";
+import { useCart } from "../context/CartContext";
 function Signup() {
 
   const navigate = useNavigate();
@@ -34,15 +35,32 @@ function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     try {
-      await signup(form);   // sets token + user properly
-
-      await mergeGuestCart();  // now token exists in header
-
-      navigate("/checkout");   // recommended flow
-
+      const res = await signup(form);   // sets token + user properly
+      if (res && res.role != 'admin') {
+        const guestCart = getGuestCart();
+        if (guestCart.length > 0) {
+          // Merge immediately after signup before navigating
+          try {
+            await mergeGuestCart();
+          } catch (err) {
+            console.warn("Cart merge failed:", err);
+            // non-critical — still navigate to cart
+          }
+          navigate("/cart");
+        } else {
+          navigate("/");
+        }
+      } else {
+        navigate("/admin/products");
+      }
     } catch (error) {
-      console.error(error);
+      console.error(error.message || "Signup failed. Please try again.");
     }
   };
 

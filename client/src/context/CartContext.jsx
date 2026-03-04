@@ -21,24 +21,22 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => {
-        const merge = async () => {
-            if (token) {
-                const guestCart = getGuestCart();
+    const mergeGuestCart = async () => {
+        if (!token) return;
 
-                if (guestCart.length > 0) {
-                    await API.post("/cart/merge", {
-                        guestItems: guestCart,
-                    });
+        const guestCart = getGuestCart();
+        if (guestCart.length === 0) return;
 
-                    clearGuestCart();
-                    loadCart();
-                }
-            }
-        };
-
-        merge();
-    }, [token]);
+        try {
+            await API.post("/cart/merge", { guestItems: guestCart });
+            clearGuestCart();
+            await loadCart();
+        } catch (err) {
+            if (err.name === "CanceledError") return; // unmount cleanup, ignore
+            console.warn("Cart merge failed:", err);
+            // guest cart intentionally NOT cleared — preserve items on failure
+        }
+    };
 
     useEffect(() => {
         const syncCart = () => {
@@ -209,6 +207,7 @@ export const CartProvider = ({ children }) => {
                 decreaseQty,
                 removeItem,
                 clearCart,
+                mergeGuestCart,
                 cartCount,
                 cartTotal,
             }}

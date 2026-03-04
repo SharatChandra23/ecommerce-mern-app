@@ -1,12 +1,11 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useCart } from "../context/CartContext";
 import AppHeading from "../components/common/AppHeading";
 import AppButton from "../components/common/AppButton";
+import { getGuestCart } from "../utils/cartStorage";
 
 function Login() {
-    const { mergeGuestCart } = useCart();
     const { login } = useContext(AuthContext);
 
     const [form, setForm] = useState({ email: "", password: "" });
@@ -14,7 +13,7 @@ function Login() {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
-    const location = useLocation(); //  Now actually used
+    const location = useLocation();
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,24 +25,26 @@ function Login() {
         setLoading(true);
 
         try {
-            await login(form.email, form.password);
+            const res = await login(form.email, form.password);
 
-            //  Merge cart BEFORE navigating so errors can be caught
-            try {
-                await mergeGuestCart();
-            } catch {
-                // Non-critical — don't block login if cart merge fails
+            if (res?.role === 'admin') {
+                navigate("/admin/products", { replace: true });
+                return;
             }
+            // Use local guest cart check (no API call) — same pattern as Signup
+            const guestCart = getGuestCart();
+            if (guestCart.length > 0) {
+                navigate("/cart", { replace: true });
+            } else {
+                //  Check both location.state (React Router) and sessionStorage
+                const redirectPath =
+                    location.state?.from?.pathname ||           // from ProtectedRoute
+                    sessionStorage.getItem("redirectAfterLogin") || // from api.js
+                    "/";
 
-            //  Check both location.state (React Router) and sessionStorage
-            const redirectPath =
-                location.state?.from?.pathname ||           // from ProtectedRoute
-                sessionStorage.getItem("redirectAfterLogin") || // from api.js
-                "/";
-
-            sessionStorage.removeItem("redirectAfterLogin");
-            navigate(redirectPath, { replace: true }); //  replace so /login isn't in history
-
+                sessionStorage.removeItem("redirectAfterLogin");
+                navigate(redirectPath, { replace: true }); //  replace so /login isn't in history
+            }
         } catch (err) {
             setError(err.response?.data?.message || "Login failed. Try again.");
         } finally {
@@ -104,7 +105,7 @@ function Login() {
                         className={`${loading
                             ? "bg-gray-400 cursor-not-allowed"
                             : "bg-slate-900 text-white hover:bg-slate-800"
-                        }`}
+                            }`}
                     >
                         {loading ? "Signing In..." : "Sign In"}
                     </AppButton>
